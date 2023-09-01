@@ -71,6 +71,37 @@ class Meteo_Pico:
         
         print('Pressure sensor initialized')
         # return self.bmp
+        
+    def set_TempAndHumidity(self, gpio_scl, gpio_sda):
+        '''
+        Temperature and Humidity Sensor: SI7021
+        '''
+        
+        # check_scl = self._checkConflict(pin=gpio_scl, mode='i2c', type='SCL')
+        # check_sda = self._checkConflict(pin=gpio_sda, mode='i2c', type='SDA')
+        # print(check_scl, check_sda)
+        
+        i2c_scl = self.GPi[gpio_scl]
+        i2c_sda = self.GPi[gpio_sda]
+        
+        scl = machine.Pin(gpio_scl)
+        sda = machine.Pin(gpio_sda)
+        
+        i2c_id = i2c_scl['i2c_n']
+        print(i2c_id)
+        
+        bus = machine.I2C(i2c_id, scl=scl, sda=sda)
+        print(bus.scan())
+        self.si = SI7021.SI7021(bus)
+        
+        print('Temperature and Humidity sensor initialized')
+        print('aqui')
+        humidity = self.si.humidity()
+        temperature = self.si.temperature()
+        humidity = self.si.humidity()
+        dew_point = self.si.dew_point()
+        print(humidity, temperature, dew_point)
+    
 if __name__ == '__main__':
     a = Meteo_Pico()
     a.set_PressureSensor()
