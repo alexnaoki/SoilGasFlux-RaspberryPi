@@ -102,6 +102,18 @@ class Meteo_Pico:
         dew_point = self.si.dew_point()
         print(humidity, temperature, dew_point)
     
+    def set_LightSensor(self, gpio_scl, gpio_sda):
+        scl = machine.Pin(gpio_scl)
+        sda = machine.Pin(gpio_sda)
+        
+        i2c_id = self.GPi[gpio_scl]['i2c_n']
+        
+        i2c = machine.I2C(i2c_id, scl=scl, sda=sda)
+        print(i2c.scan())
+        self.tsl = tsl2591.TSL2591(i2c=i2c)
+        print('Light sensor initialized')
+        print(self.tsl.lux)
+    
 if __name__ == '__main__':
     a = Meteo_Pico()
     a.set_PressureSensor()
