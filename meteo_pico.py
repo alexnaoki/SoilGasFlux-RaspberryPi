@@ -114,6 +114,24 @@ class Meteo_Pico:
         print('Light sensor initialized')
         print(self.tsl.lux)
     
+    def set_SDCard(self, gpio_cs, gpio_sck, gpio_di, gpio_do):
+        cs = machine.Pin(gpio_cs, machine.Pin.OUT)
+        sck = machine.Pin(gpio_sck)
+        di = machine.Pin(gpio_di)
+        do = machine.Pin(gpio_do)
+        
+        spi_id = self.GPi[gpio_cs]['spi_n']
+        print(spi_id)
+        
+        spi = machine.SPI(spi_id, sck=sck, mosi=di, miso=do,
+                          baudrate=1000000, polarity=0, phase=0, bits=8, firstbit=machine.SPI.MSB)
+        
+        # print(spi)
+        self.sd = sdcard.SDCard(spi=spi, cs=cs)
+
+        vfs = uos.VfsFat(self.sd)
+        uos.mount(vfs, "/sd")
+        print('SD Card initialized')
 if __name__ == '__main__':
     a = Meteo_Pico()
     a.set_PressureSensor()
