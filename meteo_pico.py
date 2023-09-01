@@ -48,25 +48,29 @@ class Meteo_Pico:
             return True
 
     
-    def set_PressureSensor(self):
-        check_scl = _checkConflict(pin=11, mode='i2c', type='SCL')
-        check_sda = _checkConflict(pin=10, mode='i2c', type='SDA')
+    def set_PressureSensor(self, gpio_scl, gpio_sda):
+        '''
+        Pressure Sensor: BMP280
+        '''
         
-        i2c_0 = self.GPi[11]
-        i2c_1 = self.GPi[10]
+        # check_scl = self._checkConflict(pin=gpio_scl, mode='i2c', type='SCL')
+        # check_sda = self._checkConflict(pin=gpio_sda, mode='i2c', type='SDA')
         
-        scl = machine.Pin(gp_n1)
-        sda = machine.Pin(gp_n2)
+        i2c_scl = self.GPi[gpio_scl]
+        i2c_sda = self.GPi[gpio_sda]
         
-        i2c_id = i2c_0['i2c_n']
+        scl = machine.Pin(gpio_scl)
+        sda = machine.Pin(gpio_sda)
         
-        bus = machine.I2C(i2c_id, scl=scl, sda=sda, freq=200000)
+        i2c_id = i2c_scl['i2c_n']
+        # print(i2c_id)
+        
+        bus = machine.I2C(i2c_id, scl=scl, sda=sda)
         self.bmp = bmp280.BMP280(bus)
-        self.bmp.use_case(self.bmp.BMP280_CASE_INDOOR)
+        self.bmp.use_case(bmp280.BMP280_CASE_INDOOR)
         
         print('Pressure sensor initialized')
-        
-        
+        # return self.bmp
 if __name__ == '__main__':
     a = Meteo_Pico()
     a.set_PressureSensor()
