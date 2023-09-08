@@ -1,9 +1,9 @@
 import network, time, socket
+from meteo_pico import Meteo_Pico
 
-
-def web_page():
-  html = """<html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-            <body><h1>Hello World</h1></body></html>
+def web_page(data):
+  html = f"""<html><head><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="refresh" content="10"></head>
+            <body><h1>Hello World<p>{data}</p></h1></body></html>
          """
   return html
 
@@ -34,14 +34,18 @@ def ap_mode(ssid, password):
     s.bind(('', 80))
     s.listen(5)
 
+    initial_value = 210
     while True:
       conn, addr = s.accept()
       print('Got a connection from %s' % str(addr))
       request = conn.recv(1024)
       print('Content = %s' % str(request))
-      response = web_page()
+      response = web_page(data=initial_value)
       conn.send(response)
       conn.close()
+      
+      initial_value += 10
+      
       
 ap_mode('NAME',
         'PASSWORD')

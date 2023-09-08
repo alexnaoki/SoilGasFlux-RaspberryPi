@@ -1,13 +1,13 @@
 import machine, os
-import components.sdcard
+from components.sdcard import SDCard
 import uos
 
 
 # SD Card Pins
-chipselect_sdcard = machine.Pin(1, machine.Pin.OUT)
-spiClock_sdcard = machine.Pin(2)
-dataIn_sdcard = machine.Pin(3)
-dataOut_sdcard = machine.Pin(4)
+chipselect_sdcard = machine.Pin(17, machine.Pin.OUT)
+spiClock_sdcard = machine.Pin(18)
+dataIn_sdcard = machine.Pin(19)
+dataOut_sdcard = machine.Pin(16)
 
 # Initialiaze SPI peripheral (start with 1MHz)
 spi_sdcard = machine.SPI(0,
@@ -21,7 +21,7 @@ spi_sdcard = machine.SPI(0,
                          miso=dataOut_sdcard)
 
 # Initialize SD card
-sd = sdcard.SDCard(spi=spi_sdcard, cs=chipselect_sdcard)
+sd = SDCard(spi=spi_sdcard, cs=chipselect_sdcard)
 
 # Mount filesystem
 vfs = uos.VfsFat(sd)

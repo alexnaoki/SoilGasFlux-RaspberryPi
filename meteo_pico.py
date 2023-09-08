@@ -1,7 +1,9 @@
 from components import bmp280, tsl2591, sdcard, SI7021
 import machine
 import time, os
-
+import uos
+ 
+ 
 print('Library imports:\t OK')
 
 class Meteo_Pico:
@@ -46,7 +48,6 @@ class Meteo_Pico:
         else:   
             self.inUse_Gpi[pin] = True
             return True
-
     
     def set_PressureSensor(self, gpio_scl, gpio_sda):
         '''
@@ -132,6 +133,30 @@ class Meteo_Pico:
         vfs = uos.VfsFat(self.sd)
         uos.mount(vfs, "/sd")
         print('SD Card initialized')
+        
+        
+    
+    
 if __name__ == '__main__':
     a = Meteo_Pico()
-    a.set_PressureSensor()
+    a.set_PressureSensor(gpio_scl=1, gpio_sda=0)
+    
+    a.set_TempAndHumidity(gpio_scl=1, gpio_sda=0)
+    
+    a.set_LightSensor(gpio_scl=1, gpio_sda=0)
+    
+    a.set_SDCard(gpio_cs=17, gpio_sck=18, gpio_di=19, gpio_do=16)
+    
+    print(os.listdir())
+    time.sleep(5)
+    
+    while True:
+        time.sleep(1)
+
+        print('Pressure: {0} Pa'.format(a.bmp.pressure))
+        print('Temperature: {0} C'.format(a.bmp.temperature))
+
+        print('Humidity: {0}'.format(a.si.humidity()))
+        print('Temperature: {0}C'.format(a.si.temperature()))
+        
+        print('Lux: {0}'.format(a.tsl.lux))
