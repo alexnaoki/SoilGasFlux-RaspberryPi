@@ -1,46 +1,23 @@
-I2C_SLAVE = 0x0703
-CMD_READ_REG = 0x22
-REG_CO2_PPM = 0x08
 
-import io
-import fcntl
+from machine import Pin, I2C, SoftI2C
+import time
 
-class K30Sensor:
-    def __init__(self, bus, addr=0x68):
-        self.fr = io.open(bus, "rb", buffering=0)
-        self.fw = io.open(bus, "wb", buffering=0)
-        
-        fcntl.ioctl(self.fr, I2C_SLAVE, addr)
-        fcntl.ioctl(self.fw, I2C_SLAVE, addr)
-        
-    def write(self, *data):
-        if type(data) is list or type(data) is tuple:
-            data = bytes(data)
-        self.fw.write(data)
-    
-    def read(self, count):
-        s = self.fr.read(count)
-        l = []
-        if len(s) != 0:
-            for n in s:
-                l.append(ord(n))
-        return l
-    
-    def read_co2_ppm(self):
-        checksum = (CMD_READ_REG + REG_CO2_PPM) & 0xFF
-        self.write(CMD_READ_REG, 0, REG_CO2_PPM, checksum)
-
-        response = self.read(4)
-        return ((response[1] & 0xFF) << 8) | (response[2] & 0xFF)
-    
-    def close(self):
-        self.fw.close()
-        self.fr.close()
-
-if __name__ == "__main__":
-    """
-    Demonstrate the use of the K30Sensor class by simply reading the
-    concentration from the sensor, and printing it to the screen.
-    """
-    with K30Sensor("/dev/i2c-0") as k30:
-        print("Concentration of CO2: {} ppm".format(k30.read_co2_ppm()))
+i2c = I2C(0, scl=Pin(1), sda=Pin(0), freq=100000)
+# i2c = SoftI2C(scl=Pin(1), sda=Pin(0), freq=100000)
+print(i2c.scan())
+# for i in range(100):
+while True:
+    try:
+        i2c.writeto(0x68, bytes([0x22, 0x00, 0x08, 0x2A]))
+        time.sleep_ms(30)
+        response = i2c.readfrom(0x68, 4)
+        checksum = sum(response[:3])
+        for i in range(4):
+            print(response[i])
+        print(checksum)
+        print((response[1] << 8) | response[2])
+        print()
+        time.sleep_ms(2000)
+    except:
+        print("error")
+        time.sleep_ms(2000)
