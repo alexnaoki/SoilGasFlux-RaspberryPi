@@ -8,6 +8,8 @@ class K30:
     def read_value(self):
         self.i2c.writeto(self.addr, bytes([0x22, 0x00, 0x08, 0x2A]))
         sleep_ms(30)
+        
+        #TODO use to read to buffer instead of readfrom
         response = self.i2c.readfrom(self.addr, 4)
         checksum = sum(response[:3])
         if checksum != response[3]:
