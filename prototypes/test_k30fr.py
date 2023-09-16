@@ -1,10 +1,10 @@
-
 from machine import Pin, I2C, SoftI2C
 import time
 
 i2c = I2C(0, scl=Pin(1), sda=Pin(0), freq=100000)
 # i2c = SoftI2C(scl=Pin(1), sda=Pin(0), freq=100000)
 print(i2c.scan())
+print(0x68)
 # for i in range(100):
 while True:
     try:
@@ -18,6 +18,7 @@ while True:
         print((response[1] << 8) | response[2])
         print()
         time.sleep_ms(2000)
-    except:
+    except Exception as error:
+        print(error)
         print("error")
         time.sleep_ms(2000)

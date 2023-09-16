@@ -23,4 +23,8 @@ class RH_to_WaterVaporMoleFraction:
         
         return P_Buck
     
+class soil_CO2_eefluxRate:
+    def __init__(self, co2_concentration, ):
+        pass
+    
     
