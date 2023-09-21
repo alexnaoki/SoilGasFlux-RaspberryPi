@@ -168,8 +168,13 @@ class Meteo_Pico:
         i2c = machine.I2C(i2c_id, scl=scl, sda=sda)
         
         self.rtc = rtc.PCF8523(i2c)
-        self.rtc.datetime = datetime
-        print('RTC initialized with datetime: {0} (needs to convert from int to datetime format)'.format(self.rtc.datetime))
+        
+        date = rtc.datetime_tuple(year=2023, month=9, day=19, weekday=None, 
+                                  hour=11, minute=13, second=0, millisecond=0)
+        
+        self.rtc.datetime(date)
+        # print()
+        print('RTC initialized with datetime: {0} (needs to convert from int to datetime format)'.format(self.rtc.datetime()))
     
     
 if __name__ == '__main__':
@@ -184,6 +189,8 @@ if __name__ == '__main__':
     
     a.set_k30fr(gpio_scl=1, gpio_sda=0)
     
+    a.set_rtc(gpio_scl=27, gpio_sda=26, datetime=(2023, 9, 19, 14,35,0,0))
+    
     print(os.listdir())
     time.sleep(5)
     
@@ -191,10 +198,16 @@ if __name__ == '__main__':
     while True:
         
         f = open(f'/sd/{counter}.csv', 'w')
-        f.write('Pressure (bmp280), Temperature (bmp280), Humidity (si7021), Temperature (si7021), Lux (tsl2591), CO2 (k30fr)\n')
+        f.write('time,Pressure (bmp280),Temperature (bmp280),Humidity (si7021),Temperature (si7021),Lux (tsl2591),CO2 (k30fr)\n')
         
         
         for i in range(60):
+            
+            rtc_time = ''
+            # print(a.rtc.datetime())
+            print(a.rtc.datetime())
+            # print(type(rtc.tuple2seconds(a.rtc.datetime())))
+            
             bmp280_pressure_value = ''
             bmp280_temperature_value = ''
             
@@ -207,6 +220,8 @@ if __name__ == '__main__':
             time.sleep(1)
             
             try:
+                rtc_time = rtc.tuple2seconds(a.rtc.datetime())
+                
                 bmp280_pressure_value = a.bmp.pressure
                 bmp280_temperature_value = a.bmp.temperature
                 
@@ -214,8 +229,11 @@ if __name__ == '__main__':
                 si_temperature_value = a.si.temperature()
                 
                 tsl_lux_value = a.tsl.lux
-                
+                # print('ok')
                 k30_co2_value = a.k30.read_value()
+                # print('ok k30')
+                print('time:{0}'.format(rtc_time))
+                
                 print('Pressure: {0} Pa'.format(bmp280_pressure_value))
                 print('Temperature: {0} C'.format(bmp280_temperature_value))
 
@@ -232,7 +250,7 @@ if __name__ == '__main__':
                 
                 pass
             
-            f.write(f'{bmp280_pressure_value}, {bmp280_temperature_value}, {si_humidity_value}, {si_temperature_value}, {tsl_lux_value}, {k30_co2_value}\n')
+            f.write(f'{rtc_time},{bmp280_pressure_value},{bmp280_temperature_value},{si_humidity_value},{si_temperature_value},{tsl_lux_value},{k30_co2_value}\n')
             
         f.close()
         print('### File written ###')
