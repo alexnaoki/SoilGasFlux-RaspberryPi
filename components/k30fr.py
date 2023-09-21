@@ -9,8 +9,10 @@ class K30:
         self.i2c.writeto(self.addr, bytes([0x22, 0x00, 0x08, 0x2A]))
         sleep_ms(30)
         
+        # bytearray
         #TODO use to read to buffer instead of readfrom
-        response = self.i2c.readfrom(self.addr, 4)
+        response = bytearray(4)
+        response_1 = self.i2c.readfrom_into(self.addr, response)
         checksum = sum(response[:3])
         if checksum != response[3]:
             raise OSError('K30 CRC error')
