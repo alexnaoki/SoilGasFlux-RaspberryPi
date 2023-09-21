@@ -10,15 +10,20 @@ while True:
     try:
         i2c.writeto(0x68, bytes([0x22, 0x00, 0x08, 0x2A]))
         time.sleep_ms(30)
-        response = i2c.readfrom(0x68, 4)
+        response = bytearray(4)
+        response_1 = i2c.readfrom_into(0x68, response)
         checksum = sum(response[:3])
-        for i in range(4):
-            print(response[i])
-        print(checksum)
+        print()
+        print(response)
+        print()
+        # for i in range(4):
+        #     print(response[i])
+        print()
+        print(checksum, response[3])
         print((response[1] << 8) | response[2])
         print()
-        time.sleep_ms(2000)
+        time.sleep_ms(1000)
     except Exception as error:
         print(error)
         print("error")
-        time.sleep_ms(2000)
+        time.sleep_ms(1000)

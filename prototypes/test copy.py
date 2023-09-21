@@ -1,31 +1,42 @@
-from machine import Pin
+from machine import Pin , PWM
 from utime import sleep
-import random
-import ds18x20
+
+led = Pin(25,Pin.OUT)
+ina1 = Pin(13,Pin.OUT)
+ina2 = Pin(14, Pin.OUT)
+pwma = PWM(Pin(15))
+
+pwma.freq(1000)
+
+led.toggle()
 
 
-pin = Pin("LED", Pin.OUT)
-relay01 = Pin(16, Pin.OUT)
-relay02 = Pin(18, Pin.OUT)
-relay03 = Pin(19, Pin.OUT)
-relay04 = Pin(20, Pin.OUT)
+def RotateCW(duty):
+    ina1.value(1)
+    ina2.value(0)
+    duty_16 = int((duty*65536)/100)
+    pwma.duty_u16(duty_16)
 
-print("LED starts flashing...")
+def RotateCCW(duty):
+    ina1.value(0)
+    ina2.value(1)
+    duty_16 = int((duty*65536)/100)
+    pwma.duty_u16(duty_16)
+    
+def StopMotor():
+    ina1.value(0)
+    ina2.value(0)
+    pwma.duty_u16(0)
+    
+
 while True:
-    #print(random.randint(1, 100))
-    # rnd = random.randint(1, 100)
-    pin.toggle()
-    relay01.value(0)
-    relay02.value(0)
-    relay03.value(0)
-    relay04.value(0)
-    sleep(0.2) # sleep 1sec
-    relay01.value(1)
-    sleep(0.2) # sleep 1sec
-    relay02.value(1)
-    sleep(0.2) # sleep 1sec
-    relay03.value(1)
-    sleep(0.2) # sleep 1sec
-    relay04.value(1)
-    sleep(1)
-print('Finish')
+    # duty_cycle=float(input("Enter pwm duty cycle"))
+    duty_cycle = 100
+    print (duty_cycle)
+    RotateCW(duty_cycle)
+    print('here')
+    sleep(10)
+    print('here2')
+    RotateCCW(duty_cycle)
+    sleep(10)
+    # StopMotor()
