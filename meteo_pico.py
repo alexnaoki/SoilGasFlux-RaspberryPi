@@ -39,19 +39,8 @@ class Meteo_Pico:
                26: {'i2c_n':1, 'i2c_SDA': True, 'i2c_SCL': False, 'spi_n': None, 'spi_RX': False, 'spi_CSn':False, 'spi_SCK': False, 'spi_TX': False},
                27: {'i2c_n':1, 'i2c_SDA': False, 'i2c_SCL': True, 'spi_n': None, 'spi_RX': False, 'spi_CSn':False, 'spi_SCK': False, 'spi_TX': False},
                28: {'i2c_n':None, 'i2c_SDA': False, 'i2c_SCL': False, 'spi_n': None, 'spi_RX': False, 'spi_CSn':False, 'spi_SCK': False, 'spi_TX': False}}
+
         
-        self.inUse_Gpi = {0: False, 1: False, 2: False, 3: False, 4: False, 5: False, 6: False, 7: False, 8: False, 9: False, 10:False,
-                     11:False, 12:False, 13:False, 14:False, 15:False, 16:False, 17:False, 18:False, 19:False, 20:False, 21:False,
-                     22:False, 26:False, 27:False, 28:False}
-        
-        
-    def _checkConflict(self, pin, mode, type):
-        if self.inUse_Gpi[pin] == True:
-            print('Pin is already in use')
-            return False
-        else:   
-            self.inUse_Gpi[pin] = True
-            return True
     
     def set_PressureSensor(self, gpio_scl, gpio_sda):
         '''
@@ -81,10 +70,6 @@ class Meteo_Pico:
         '''
         Temperature and Humidity Sensor: SI7021
         '''
-        
-        # check_scl = self._checkConflict(pin=gpio_scl, mode='i2c', type='SCL')
-        # check_sda = self._checkConflict(pin=gpio_sda, mode='i2c', type='SDA')
-        # print(check_scl, check_sda)
         
         i2c_scl = self.GPi[gpio_scl]
         i2c_sda = self.GPi[gpio_sda]

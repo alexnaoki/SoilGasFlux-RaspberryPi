@@ -7,6 +7,7 @@ print(i2c.scan())
 
 while True:
     try:
+        print(i2c.scan())
         k30 = K30(i2c)
         value = k30.read_value()
         print(value)

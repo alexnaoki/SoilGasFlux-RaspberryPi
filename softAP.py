@@ -1,4 +1,4 @@
-import network, socket
+import network, socket, asyncio
 
 class SoftAP:
     def __init__(self, ssid, password):
@@ -32,27 +32,22 @@ class SoftAP:
                """
         return html
     
-    def web_page2(self):
-        html = f"""<!DOCTYPE html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="refresh" content="10"></head>
-                  <body><h1>Hello World<p>test</p></h1></body></html>
-               """
-        return html
-    
-    def run(self, sensor):
+    async def handle_connection(self, conn, addr, sensor):
+        print('Got a connection from %s' % str(addr))
+        request = await asyncio.to_thread(conn.recv, 1024)
+        print('Content = %s' % str(request))
+        response = self.web_page2()
+        await asyncio.to_thread(conn.send, response.encode())
+        conn.close()
+
+    async def run(self, sensor):
         sensor = sensor
         while True:
-            conn, addr = self.s.accept()
-            print('Got a connection from %s' % str(addr))
-            request = conn.recv(1024)
-            print('Content = %s' % str(request))
-        #   response = self.web_page2(data=sensor.bmp.pressure)
-            response = self.web_page2()
-            conn.send(response)
-            conn.close()
-          
+            conn, addr = await asyncio.to_thread(self.s.accept)
+            asyncio.create_task(self.handle_connection(conn, addr, sensor))
           
           
 if __name__ == '__main__':
     ap = SoftAP(ssid='NAME',
                 password='PASSWORD')
-    # ap.run()
+    asyncio.run(ap.run(sensor=None))
