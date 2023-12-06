@@ -2,12 +2,17 @@ import machine
 import time
 
 
-led = machine.Pin("LED", machine.Pin.OUT)
+led = machine.Pin('LED', machine.Pin.OUT)
 button01 = machine.Pin(6, machine.Pin.IN, machine.Pin.PULL_DOWN)
 
-
+led.value(1)
+print(led.value())
+time.sleep(3)
+print('toggling')
+# led.toggle()
 
 while True:
+    print(led.value())
     if button01.value() == 1:
         led.on()
     elif button01.value() == 0:

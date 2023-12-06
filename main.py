@@ -1,7 +1,15 @@
-import machine, os, time
+import machine, os, time, json
 from meteo_pico import Meteo_Pico
+from init_motor import Init_Motor
+from init_sd_rtc import Init_SD_RTC
 
-# LED = machine.Pin(25, machine.Pin.OUT)
+os.chdir('/')
+
+with open('config.json', 'r') as f:
+    config_file = f.read()
+    config = json.loads(config_file)
+
+led = machine.Pin(25, machine.Pin.OUT)
 
 # RESET_CAUSE = {
 #     'PWRON_RESET': 1,
@@ -16,30 +24,23 @@ from meteo_pico import Meteo_Pico
 # led.on()
 # relay = machine.Pin(15, machine.Pin.OUT)
 
-led = machine.Pin("LED", machine.Pin.OUT)
-button01 = machine.Pin(6, machine.Pin.IN, machine.Pin.PULL_DOWN)
+# led = machine.Pin("LED", machine.Pin.OUT)
+# button01 = machine.Pin(6, machine.Pin.IN, machine.Pin.PULL_DOWN)
+
+motor = Init_Motor()
+
+## Config buttons
+b1 = machine.Pin(config['buttons']['button01'], machine.Pin.IN, machine.Pin.PULL_DOWN)
+b2 = machine.Pin(config['buttons']['button02'], machine.Pin.IN, machine.Pin.PULL_DOWN)
 
 
-print('start')
+
+
 while True:
-    if button01.value() == 1:
-        led.on()
-    elif button01.value() == 0:
-        led.off()
-    # led.on()
-    time.sleep(0.1)
+    time.sleep(0.5)
+    print('nada')
 
-# for _ in range(5):
-#     try:
-#         a = Meteo_Pico()
-#         a.set_SDCard(gpio_cs=17, gpio_sck=18, gpio_di=19, gpio_do=16)
-#         time.sleep(1)
-#         break
+    motor.Rotate_ButtonControl(b1.value(), b2.value())
 
-#     except Exception as error:
-#         print(error)
-#         led.on()
-#         time.sleep(1)
-#         machine.reset()
 
-# print('FINISH')
+
