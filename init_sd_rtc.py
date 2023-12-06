@@ -4,7 +4,7 @@ from prototypes import logging_error
 
 class Init_SD_RTC:
     def __init__(self):
-        print('Init SD Card and RTC')
+        print('Initialize SD Card and RTC')
         
         os.chdir('/')
         
@@ -50,9 +50,7 @@ class Init_SD_RTC:
         uos.mount(vfs, "/sd")
         print('SD Card initialized')
         return 0
-        # except OSError as e:
-        #     print('erro aqui')
-        #     print(e, type(e))
+
         
     @logging_error.log_errors_to_file('error.log')
     def set_rtc(self):
