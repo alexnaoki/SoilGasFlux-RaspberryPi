@@ -28,10 +28,13 @@ led = machine.Pin(25, machine.Pin.OUT)
 # button01 = machine.Pin(6, machine.Pin.IN, machine.Pin.PULL_DOWN)
 
 motor = Init_Motor()
+#############################
+print('SENSORS:')
+sensors = Init_Sensors()
+pressure_sensor = sensors.set_PressureSensor()
+temp_hum_sensor = sensors.set_TempAndHumidity()
+co2_sensor = sensors.set_k30()
 
-## Config buttons
-b1 = machine.Pin(config['buttons']['button01'], machine.Pin.IN, machine.Pin.PULL_DOWN)
-b2 = machine.Pin(config['buttons']['button02'], machine.Pin.IN, machine.Pin.PULL_DOWN)
 
 
 
