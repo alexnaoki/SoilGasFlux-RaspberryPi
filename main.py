@@ -4,7 +4,7 @@ from init_sensors import Init_Sensors
 from init_motor import Init_Motor
 from init_sd_rtc import Init_SD_RTC
 from aux.create_config import create_config_file
-from aux.chamber_position import Chamber_Position
+from aux.chamber_position import ChamberPosition
 from prototypes import logging_error
 
 
@@ -22,12 +22,28 @@ except:
         config = json.loads(config_file)
 ###########################
 
-### Assigning Buttons ###
+### Assigning Buttons and limit switch###
 b1 = machine.Pin(config['buttons']['button01'], machine.Pin.IN, machine.Pin.PULL_DOWN)
 b2 = machine.Pin(config['buttons']['button02'], machine.Pin.IN, machine.Pin.PULL_DOWN)
 
 led = machine.Pin(25, machine.Pin.OUT)
+
+# test_pin = machine.Pin(11, machine.Pin.OUT)
+# test_pin.value(1)
+
+def stop_motor_TOP(pin):
+    print('Motor stopped in the top', pin.value())
+    
+def stop_motor_BOTTOM(pin):
+    print('Motor stopped in the bottom', pin.value())
+
+ls_top = machine.Pin(config['limit_swiches']['top'], machine.Pin.IN, machine.Pin.PULL_DOWN)
+ls_bot = machine.Pin(config['limit_swiches']['bottom'], machine.Pin.IN, machine.Pin.PULL_DOWN)
+
+ls_top.irq(trigger=machine.Pin.IRQ_RISING, handler=stop_motor_TOP)
+ls_bot.irq(trigger=machine.Pin.IRQ_RISING, handler=stop_motor_BOTTOM)
 ###########################
+
 
 ### Initialize Components ###
 sd_rtc_component = Init_SD_RTC()
@@ -39,6 +55,8 @@ print('ok')
 motor = Init_Motor()
 #############################
 
+
+
 ### Initialize Sensors ###
 print('SENSORS:')
 sensors = Init_Sensors()
@@ -48,21 +66,28 @@ co2_sensor = sensors.set_k30()
 ##########################
 
 
+# time.sleep(1)
+
 ### Initialize Chamber ###
-initial_chamber_position = Chamber_Position(config=config)
-chamber_position = initial_chamber_position.check_chamber_position()
+initial_chamber_position = ChamberPosition(limit_switch_bot=ls_bot, limit_switch_top=ls_top)
+chamber_position = initial_chamber_position.check_limit_switches()
 if chamber_position == 'bottom':
     print('Chamber is in the bottom')
+    motor_next_action = 'open'
 elif chamber_position == 'top':
     print('Chamber is in the top')
+    motor_next_action = None
 else:
     print('Chamber not pressing limit switch')
+    motor_next_action = 'open'
 
 
-
+# motor.Rotate(motor_next_action)
+print('Entrando no loop')
 while True:
     time.sleep(0.5)
     print('nada')
+    # print(initial_chamber_position.check_limit_switches())
 
     # motor.Rotate_ButtonControl(b1.value(), b2.value())
 
