@@ -1,9 +1,11 @@
 import json
 import os
+from prototypes import logging_error
 
-if __name__ == '__main__':
+@logging_error.log_errors_to_file('error.log')
+def create_config_file():
     ##### GPIOs ########
-    buttons = {'button01': 6, 'button02':7, 'button03':8}
+    buttons = {'button01': 6, 'button02': 7, 'button03':8}
     
     motor = {'ai01': 13, 'ai02': 14, 'pwma': 15,
              'bi01': 22, 'bi02': 21, 'pwmb': 20}
@@ -40,3 +42,7 @@ if __name__ == '__main__':
     with open('config.json', 'w') as f:
         json.dump(config, f)
     print('config.json created')
+    
+    
+if __name__ == '__main__':
+    create_config_file()
