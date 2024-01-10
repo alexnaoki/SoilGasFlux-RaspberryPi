@@ -46,12 +46,22 @@ class Init_SD_RTC:
         # print(spi)
         self.sd = sdcard.SDCard(spi=spi, cs=cs)
 
+        try:
+            uos.umount("/sd")
+        except:
+            pass
         vfs = uos.VfsFat(self.sd)
         uos.mount(vfs, "/sd")
         print('SD Card initialized')
-        return 0
-
-        
+            # return 0
+        # except Exception as e:
+        #     print('ERRO')
+        #     print(e)
+            # logging_error.log_errors_and_reset('error.log', e)
+            
+            # print('SD card error:/t', e)
+            # machine.reset()
+            
     @logging_error.log_errors_to_file('error.log')
     def set_rtc(self):
         gpio_sda = self.config['rtc']['sda']
