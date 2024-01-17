@@ -28,14 +28,35 @@ b2 = machine.Pin(config['buttons']['button02'], machine.Pin.IN, machine.Pin.PULL
 
 led = machine.Pin(25, machine.Pin.OUT)
 
-# test_pin = machine.Pin(11, machine.Pin.OUT)
-# test_pin.value(1)
+
+motor_current_state = None
+
+top_ls_pressed = None
+bot_ls_pressed = None
 
 def stop_motor_TOP(pin):
     print('Motor stopped in the top', pin.value())
+    global motor_current_state
+    motor_current_state = 'stop'
+    print('Motor current state:\t',motor_current_state)
+    motor.Rotate(motor_current_state)
+    global top_ls_pressed
+    top_ls_pressed = True
     
 def stop_motor_BOTTOM(pin):
     print('Motor stopped in the bottom', pin.value())
+    global motor_current_state
+    motor_current_state = 'stop'
+    print('Motor current state:\t',motor_current_state)
+    motor.Rotate(motor_current_state)
+    global bot_ls_pressed
+    bot_ls_pressed = True
+
+ls_power01 = machine.Pin(config['relays']['relay01'], machine.Pin.OUT) ## Power relay (using to power both limit switches)
+ls_power02 = machine.Pin(config['relays']['relay02'], machine.Pin.OUT) ## Power relay (using to power both limit switches)
+ls_power01.value(1)
+ls_power02.value(1)
+
 
 ls_top = machine.Pin(config['limit_swiches']['top'], machine.Pin.IN, machine.Pin.PULL_DOWN)
 ls_bot = machine.Pin(config['limit_swiches']['bottom'], machine.Pin.IN, machine.Pin.PULL_DOWN)
