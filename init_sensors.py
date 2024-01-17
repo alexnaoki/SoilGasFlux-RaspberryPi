@@ -11,7 +11,7 @@ class Init_Sensors:
             self.config = json.loads(config_file)
             
         self.i2c = machine.I2C(0, scl=machine.Pin(self.config['i2c_sensor']['scl']), 
-                               sda=machine.Pin(self.config['i2c_sensor']['sda']), freq=100000)
+                               sda=machine.Pin(self.config['i2c_sensor']['sda']), freq=50000)
         print(self.i2c.scan())
         
     @logging_error.log_errors_to_file('/sd/error.log')
@@ -23,7 +23,7 @@ class Init_Sensors:
         scl = machine.Pin(self.config['i2c_sensor']['scl'])
         sda = machine.Pin(self.config['i2c_sensor']['sda'])
         
-        bus = machine.I2C(0, scl=scl, sda=sda, freq=100000)
+        bus = machine.I2C(0, scl=scl, sda=sda, freq=50000)
         
         self.bmp = bmp280.BMP280(bus)
         self.bmp.use_case(bmp280.BMP280_CASE_INDOOR)
@@ -43,7 +43,7 @@ class Init_Sensors:
         scl = machine.Pin(self.config['i2c_sensor']['scl'])
         sda = machine.Pin(self.config['i2c_sensor']['sda'])
         
-        bus = machine.I2C(0, scl=scl, sda=sda, freq=100000)
+        bus = machine.I2C(0, scl=scl, sda=sda, freq=50000)
         
         self.si = SI7021.SI7021(bus)
         print('Temperature and Humidity Sensor initialized')
@@ -62,7 +62,7 @@ class Init_Sensors:
         scl = machine.Pin(self.config['i2c_sensor']['scl'])
         sda = machine.Pin(self.config['i2c_sensor']['sda'])
         
-        bus = machine.I2C(0, scl=scl, sda=sda, freq=100000)
+        bus = machine.I2C(0, scl=scl, sda=sda, freq=10000)
         
         self.k30 = k30fr.K30(bus)
         print('CO2 Sensor initialized')
