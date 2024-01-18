@@ -62,7 +62,7 @@ class Init_Sensors:
         scl = machine.Pin(self.config['i2c_sensor']['scl'])
         sda = machine.Pin(self.config['i2c_sensor']['sda'])
         
-        bus = machine.I2C(0, scl=scl, sda=sda, freq=10000)
+        bus = machine.I2C(0, scl=scl, sda=sda, freq=10000, timeout=100000)
         
         self.k30 = k30fr.K30(bus)
         print('CO2 Sensor initialized')
