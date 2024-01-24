@@ -115,8 +115,9 @@ print('\n\n######## Motor stopped ########\n\n')
 # print('Entrando no loop')
 time.sleep(3)
 
+last_action = None
 while True:
-    if top_ls_pressed:
+    if top_ls_pressed and (last_action != 'waiting'):
         motor_current_state = 'stop'
         motor.Rotate(motor_current_state)
         motor_next_action = 'close'
@@ -137,11 +138,9 @@ while True:
         print('#'*20)
         motor.Rotate(motor_next_action)
         top_ls_pressed = False
+        last_action = 'waiting'
         
-    elif bot_ls_pressed:
-        '''
-        there should be a loop function inside here
-        '''
+    elif bot_ls_pressed and (last_action != 'measuring'):
         motor_current_state = 'stop'
         motor.Rotate(motor_current_state)
         motor_next_action = 'open'
@@ -168,47 +167,30 @@ while True:
         print('#########################')
         motor.Rotate(motor_next_action)
         bot_ls_pressed = False
+        last_action = 'measuring'
+    
+    elif bot_ls_pressed and (last_action == 'measuring'):
+        time.sleep(1)
+        motor_current_state = 'stop'
+        motor.Rotate(motor_current_state)
+        motor_next_action = 'open'
+        print('Bottom Double pressed detected!!')
+        print('Starting opening chamber')
+        time.sleep(1)
+        motor.Rotate(motor_next_action)
+        bot_ls_pressed = False 
+    elif top_ls_pressed and (last_action == 'waiting'):
+        time.sleep(1)
+        motor_current_state = 'stop'
+        motor.Rotate(motor_current_state)
+        motor_next_action = 'close'
+        print('Top Double pressed detected!!')
+        print('Starting closing chamber')
+        time.sleep(1)
+        motor.Rotate(motor_next_action)
+        top_ls_pressed = False
     else:
         print('Waiting for the limit switch:\t', bot_ls_pressed, top_ls_pressed)
+        print('Last action:\t', last_action)
 
     time.sleep(1)
-    # time.sleep(2)
-    # print('Start Motor current state:\t',motor_current_state)
-    # print('Limit switch top:\t', ls_top.value())
-    # print('Limit switch bottom:\t', ls_bot.value())
-    # motor.Rotate('close')
-    # time.sleep(2)
-    # motor.Rotate('stop')
-    # time.sleep(2)
-    # # motor.Rotate('open')
-    # time.sleep(2)
-    # motor.Rotate('stop')
-    
-#     motor.Rotate('stop')
-#     time.sleep(3)
-#     # motor.Rotate('close')
-#     time.sleep(3)
-#     motor.Rotate('stop')
-#     time.sleep(3)
-#     motor.Rotate('open')
-#     time.sleep(3)
-
-# time.sleep(3)
-# motor.Rotate('stop')
-# time.sleep(3)
-# motor.Rotate('close')
-# time.sleep(3)
-# motor.Rotate('stop')
-# while True:
-#     # time.sleep(2)
-#     print('Start measuring')
-    
-#     # print(pressure_sensor.pressure)
-#     print('bmp280\t',pressure_sensor.pressure, pressure_sensor.temperature)
-#     time.sleep(0.5)
-#     print('si7021\t', temp_hum_sensor.temperature(), temp_hum_sensor.humidity())
-#     time.sleep(0.5)
-#     print('k30\t', co2_sensor.read_value())
-#     time.sleep(1)
-    
-    # print(initial_chamber_position.check_limit_switches())
