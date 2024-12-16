@@ -1,8 +1,14 @@
-from components import sdcard, rtc
+from components import sdcard
+# from components import rtc2 as rtc
+from components import rtc
 import machine, time, os, json, uos
 from prototypes import logging_error
+import components.ssd1306 as ssd1306
+
+
 
 class Init_SD_RTC:
+    @logging_error.log_errors_to_file('error.log')
     def __init__(self):
         print('Initialize SD Card and RTC')
         
@@ -16,11 +22,16 @@ class Init_SD_RTC:
         
         self.clock = self.set_rtc()
         
+        # self.oled = self.set_oled()
+        
         if self.config['start_time']['sync']:
             self.sync_rtc(self.clock)
         else:
             print('No RTC sync applied')
-            print(self.clock.datetime())
+            # print(self.clock)
+            print(self.clock.datetime)
+            # pass
+            
         
     
     @logging_error.log_errors_to_file('error.log') 
@@ -38,21 +49,36 @@ class Init_SD_RTC:
         # spi_id = self.GPi[gpio_cs]['spi_n']
         spi_id = 0
         print(spi_id)
-        
-        # try:
-        spi = machine.SPI(spi_id, sck=sck, mosi=di, miso=do,
-                        baudrate=1000000, polarity=0, phase=0, bits=8, firstbit=machine.SPI.MSB)
-        
-        # print(spi)
-        self.sd = sdcard.SDCard(spi=spi, cs=cs)
+        tries = 0
+        while tries < 3:
+            try:
+                spi = machine.SPI(spi_id, sck=sck, mosi=di, miso=do,
+                                baudrate=1000000, polarity=0, phase=0, bits=8, firstbit=machine.SPI.MSB)
+                
+                # print(spi)
+                self.sd = sdcard.SDCard(spi=spi, cs=cs)
+                tries = 3
+            except:
+                print('SD Card not initialized')
+                tries += 1
+                time.sleep(1)
 
         try:
             uos.umount("/sd")
         except:
             pass
-        vfs = uos.VfsFat(self.sd)
-        uos.mount(vfs, "/sd")
-        print('SD Card initialized')
+
+        tries = 0
+        while tries < 3:
+            try:
+                vfs = uos.VfsFat(self.sd)
+                uos.mount(vfs, "/sd")
+                print('SD Card initialized')
+                tries = 3
+            except:
+                print('SD Card not mounted')
+                tries += 1
+                time.sleep(1)
             # return 0
         # except Exception as e:
         #     print('ERRO')
@@ -72,7 +98,9 @@ class Init_SD_RTC:
         
         id = 1
         # print(gpio_scl, gpio_sda)
-        i2c_1 = machine.I2C(id, sda=sda, scl=scl)
+        # i2c_1 = machine.I2C(id, sda=sda, scl=scl)
+        # print(i2c_1.scan())
+        i2c_1 = machine.SoftI2C(sda=sda, scl=scl)
         clock = rtc.DS1307(i2c=i2c_1)
         
         return clock
@@ -98,6 +126,19 @@ class Init_SD_RTC:
         print(time.localtime())
         print(self.clock.datetime())
         print('synced')
+        
+    def set_oled(self):
+        gpio_sda = 4
+        gpio_scl = 5
+        sda = machine.Pin(gpio_sda)
+        scl = machine.Pin(gpio_scl)
+        
+        id=0
+        i2c_1 = machine.SoftI2C(sda=sda, scl=scl, freq=400000)
+        ssd1306_1 = ssd1306.SSD1306_I2C(128, 64, i2c_1)
+        
+        return ssd1306_1
+        
 
     
 if __name__ == '__main__':

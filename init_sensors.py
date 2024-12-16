@@ -23,10 +23,13 @@ class Init_Sensors:
         scl = machine.Pin(self.config['i2c_sensor']['scl'])
         sda = machine.Pin(self.config['i2c_sensor']['sda'])
         
-        bus = machine.I2C(0, scl=scl, sda=sda, freq=50000)
+        bus = machine.I2C(0, scl=scl, sda=sda, freq=50000, timeout=5000)
+        time.sleep_ms(100)
         
         self.bmp = bmp280.BMP280(bus)
+        time.sleep_ms(100)
         self.bmp.use_case(bmp280.BMP280_CASE_INDOOR)
+        time.sleep_ms(100)
         print('Pressure Sensor initialized')
         
         return self.bmp
@@ -43,11 +46,12 @@ class Init_Sensors:
         scl = machine.Pin(self.config['i2c_sensor']['scl'])
         sda = machine.Pin(self.config['i2c_sensor']['sda'])
         
-        bus = machine.I2C(0, scl=scl, sda=sda, freq=50000)
+        bus = machine.I2C(0, scl=scl, sda=sda, freq=50000, timeout=5000)
         
+        time.sleep_ms(100)
         self.si = SI7021.SI7021(bus)
         print('Temperature and Humidity Sensor initialized')
-        
+        time.sleep_ms(100)
         return self.si
         # except Exception as e:
         #     print('Temperature and Humidity Sensor error:/t', e)

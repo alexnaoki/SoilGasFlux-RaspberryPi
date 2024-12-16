@@ -2,8 +2,10 @@ from machine import Pin, I2C, SoftI2C
 import time
 
 i2c = I2C(0, scl=Pin(1), sda=Pin(0), freq=100000)
+i2c2 = I2C(1, scl=Pin(3), sda=Pin(2), freq=100000)
 # i2c = SoftI2C(scl=Pin(1), sda=Pin(0), freq=100000)
 print(i2c.scan())
+print(i2c2.scan())
 print(0x68)
 # for i in range(100):
 while True:

@@ -9,7 +9,7 @@ def create_config_file():
     
     motor = {'ai01': 13, 'ai02': 14, 'pwma': 15,
              'bi01': 22, 'bi02': 21, 'pwmb': 20}
-    relays = {'relay01': 11, 'relay02': 12}
+    relays = {'relay01': 2, 'relay02': 3}
     limit_swiches = {'bottom': 9, 'top': 10}
     
     rtc = {'scl': 27, 'sda': 26}
@@ -21,11 +21,11 @@ def create_config_file():
     
     ##### USER INPUTS #######
     limits = {'maxTime_motor_ON': 1*60, 
-              'maxTime_chamber_CLOSE': 0.5*60, 
-              'maxTime_chamber_OPEN': 0.5*60}
+              'maxTime_chamber_CLOSE': 2*60, 
+              'maxTime_chamber_OPEN': 3*60}
     
-    start_time = {'year': 2024, 'month':1, 'day':24, 'weekday':4, 
-                  'hour':15, 'minute':44, 'second':0, 'millisecond':None, 'sync':False}
+    start_time = {'year': 2024, 'month':12, 'day':9, 'weekday':4, 
+                  'hour':15, 'minute':58, 'second':0, 'millisecond':None, 'sync':False}
     
     id_sensor = 'sensor01'
     ####################

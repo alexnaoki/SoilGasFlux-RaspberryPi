@@ -4,11 +4,11 @@ from components.SI7021 import SI7021
 import time
 
 ##
-si7021_sda = machine.Pin(6)
-si7021_scl = machine.Pin(7)
+si7021_sda = machine.Pin(0)
+si7021_scl = machine.Pin(1)
 
 # 1 because its connect in the I2C1 instead of I2C0
-i2c = I2C(1, scl=si7021_scl, sda=si7021_sda)
+i2c = I2C(0, scl=si7021_scl, sda=si7021_sda)
 si7021 = SI7021(i2c)
 
 # si7021.reset()

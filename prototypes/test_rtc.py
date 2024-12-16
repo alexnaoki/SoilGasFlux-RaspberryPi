@@ -1,6 +1,7 @@
 from machine import Pin, I2C
 import time
 import components.rtc as rtc
+# from components.rtc2 import rtc2 as rtc
 
 i2c_0 = I2C(0, sda=Pin(0), scl=Pin(1), freq=100000)
 print(i2c_0.scan())
@@ -15,8 +16,8 @@ clock_rtc = rtc.DS1307(i2c=i2c_1)
 
 # clock_rtc.datetime = (2023, 9, 16, 10,18,0,0)
 
-date = rtc.datetime_tuple(year=2023, month=9, day=19, weekday=None, hour=11, minute=13, second=0, millisecond=0)
-clock_rtc.datetime(date)
+date = rtc.datetime_tuple(year=2024, month=3, day=27, weekday=None, hour=19, minute=16, second=0, millisecond=0)
+# clock_rtc.datetime(date)
 print(clock_rtc.datetime())
 
 # print(clock_rtc.datetime)

@@ -25,13 +25,15 @@ sd = SDCard(spi=spi_sdcard, cs=chipselect_sdcard)
 
 # Mount filesystem
 vfs = uos.VfsFat(sd)
-uos.mount(vfs, "/sd")
+uos.mount(vfs, "/sd", readonly=False)
 
 # Create a file and write something
-with open('/sd/text01.txt', 'w') as file:
+with open('/sd/test/text02.txt', 'w') as file:
     file.write('Hello, SD World!\r\n')
     file.write('This is a test\r\n')
     
+print(os.listdir('/sd'))
+
 # Read file just created
 with open('/sd/text01.txt', 'r') as file:
     data = file.read()

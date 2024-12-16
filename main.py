@@ -6,7 +6,23 @@ from aux.create_config import create_config_file
 from aux.chamber_position import ChamberPosition
 from prototypes import logging_error
 import components.rtc as rtc
+import components.ssd1306 as ssd1306
+from machine import I2C, Pin, SoftI2C, WDT
 
+i2c = SoftI2C(sda=Pin(4), scl=Pin(5), freq=400000)
+display = ssd1306.SSD1306_I2C(128, 64, i2c)
+display.fill(0)
+display.text("Hello Yellow!",0,0)
+display.text("Hello Blue!",0,17)
+display.text("Hello Blue!",0,27)
+display.text("Hello Blue!",0,37)
+display.text("Hello Blue!",0,47)
+display.text("Hello Blue!",0,57)
+
+display.show()
+
+wdt = WDT(timeout=8000)
+wdt.feed()
 
 ### Configurations files ###
 os.chdir('/')
@@ -21,147 +37,218 @@ except:
         config_file = f.read()
         config = json.loads(config_file)
 ###########################
-
+print('Feed wdt')
+wdt.feed()
 ### Assigning Buttons and limit switch###
 b1 = machine.Pin(config['buttons']['button01'], machine.Pin.IN, machine.Pin.PULL_DOWN)
 b2 = machine.Pin(config['buttons']['button02'], machine.Pin.IN, machine.Pin.PULL_DOWN)
+b3 = machine.Pin(config['buttons']['button03'], machine.Pin.IN, machine.Pin.PULL_DOWN)
 
-led = machine.Pin(25, machine.Pin.OUT)
-
-
-motor_current_state = None
-
-top_ls_pressed = None
-bot_ls_pressed = None
-
-def stop_motor_TOP(pin):
-    print('Motor stopped in the top', pin.value())
-    global motor_current_state
-    motor_current_state = 'stop'
-    print('Motor current state:\t',motor_current_state)
-    motor.Rotate(motor_current_state)
-    global top_ls_pressed
-    top_ls_pressed = True
-    
-def stop_motor_BOTTOM(pin):
-    print('Motor stopped in the bottom', pin.value())
-    global motor_current_state
-    motor_current_state = 'stop'
-    print('Motor current state:\t',motor_current_state)
-    motor.Rotate(motor_current_state)
-    global bot_ls_pressed
-    bot_ls_pressed = True
-
-ls_power01 = machine.Pin(config['relays']['relay01'], machine.Pin.OUT) ## Power relay (using to power both limit switches)
-ls_power02 = machine.Pin(config['relays']['relay02'], machine.Pin.OUT) ## Power relay (using to power both limit switches)
-ls_power01.value(1)
-ls_power02.value(1)
+relay01 = machine.Pin(config['relays']['relay01'], machine.Pin.OUT)
+relay02 = machine.Pin(config['relays']['relay02'], machine.Pin.OUT)
 
 
-ls_top = machine.Pin(config['limit_swiches']['top'], machine.Pin.IN, machine.Pin.PULL_DOWN)
-ls_bot = machine.Pin(config['limit_swiches']['bottom'], machine.Pin.IN, machine.Pin.PULL_DOWN)
-
-ls_top.irq(trigger=machine.Pin.IRQ_RISING, handler=stop_motor_TOP)
-ls_bot.irq(trigger=machine.Pin.IRQ_RISING, handler=stop_motor_BOTTOM)
-
-
-###########################
-
-print(os.listdir('/'))
+display.fill(0)
+display.text('prep2',0,0)
+display.show()
+# print(os.listdir('/'))
 ### Initialize Components ###
+try:
+    sd_rtc_component = Init_SD_RTC()
+    sd = sd_rtc_component.set_SDCard()      #/sd mounted
+except Exception as e:
+    display.fill(0)
+    display.text(f'{e}',0,0)
+    display.show()
 sd_rtc_component = Init_SD_RTC()
+
 sd = sd_rtc_component.set_SDCard()      #/sd mounted
+print('Feed wdt')
+wdt.feed()
+display.fill(0)
+display.text('OK SD',0,0)
+display.show()
+
 clock_rtc = sd_rtc_component.set_rtc()        #clock object
+wdt.feed()
 
-print(clock_rtc.datetime())
+time.sleep(1)
+display.fill(0)
+display.text(f'ok set rtc',0,0)
+display.show()
+print('Feed wdt')
+wdt.feed()
+# i2c_test = I2C(1, sda=Pin(26), scl=Pin(27))
+# print(i2c_test.scan())
+
+time.sleep(1)
+# display.fill(0)
+# # display.text(f'date {clock_rtc.datetime}',0,0)
+# display.text(f'date {clock_rtc.year}',0,0)
+# display.show()
+try:
+    # i2c_test = I2C(1, sda=Pin(26), scl=Pin(27))
+    
+    time.sleep(2)
+    display.fill(0)
+    # display.text(f'{i2c_test.scan()}',0,0)
+    display.text(f'{clock_rtc.datetime()}', 0,0)
+    display.show()
+    time.sleep(2)
+    print(clock_rtc.datetime())
+    print('Feed wdt')
+    wdt.feed()
+except Exception as e:
+    print(e)
+    
+    display.fill(0)
+    display.text(f'error {e}',0,0)
+    display.show()
+    time.sleep(2)
+print('Feed wdt')
+wdt.feed()
+
+time.sleep(1)
+display.fill(0)
+display.text('OK SD and RTC',0,0)
+display.show()
+# oled = sd_rtc_component.set_oled()
+# oled.fill(0)
+# oled.text("Hello Yellow!",0,0)
+# oled.show()
+time.sleep(1)
+display.fill(0)
+display.text('Try init Motor', 0,0)
+display.show()
+
+# print(clock_rtc.datetime())
 print('ok')
+time.sleep(1)
 motor = Init_Motor()
-#############################
-
-
+display.fill(0)
+display.text('Init Motor',0,0)
+display.show()
+print('Feed wdt')
+wdt.feed()
 ### Initialize Sensors ###
 print('SENSORS:')
+scl = machine.Pin(config['i2c_sensor']['scl'])
+sda = machine.Pin(config['i2c_sensor']['sda'])
 sensors = Init_Sensors()
-pressure_sensor = sensors.set_PressureSensor()
-temp_hum_sensor = sensors.set_TempAndHumidity()
+for i in range(5):
+    wdt.feed()
+    try:
+        pressure_sensor = sensors.set_PressureSensor()
+        bus = machine.I2C(0, scl=scl, sda=sda, freq=50000)
+        print(bus.scan())
+        if 118 in bus.scan():
+            print('BMP280 ok')
+            break
+    except Exception as e:
+        print('BMP280 error', e)
+    time.sleep(1)
+    
+for i in range(5):
+    wdt.feed()
+    try:
+        temp_hum_sensor = sensors.set_TempAndHumidity()
+        bus = machine.I2C(0, scl=scl, sda=sda, freq=50000)
+        print(bus.scan())
+        if 64 in bus.scan():
+            print('Si7021 ok')
+            break
+    except Exception as e:
+        print('Si7021 error', e)
+    time.sleep(1)
+
+
+relay01.value(1)
+for i in range(5):
+    time.sleep(1)
+    wdt.feed()
+
+for i in range(5):
+    wdt.feed()
+    try:
+        co2_sensor = sensors.set_k30()
+        bus = machine.I2C(0, scl=scl, sda=sda, freq=50000)
+        print(bus.scan())
+        if 104 in bus.scan():
+            print('K30 ok')
+            break
+    except Exception as e:
+        print('K30 error', e)
+    time.sleep(1)
+        
 co2_sensor = sensors.set_k30()
 ##########################
-
-
-### Initialize Chamber ###
-initial_chamber_position = ChamberPosition(limit_switch_bot=ls_bot, limit_switch_top=ls_top)
-chamber_position = initial_chamber_position.check_limit_switches()
-if chamber_position == 'bottom':
-    print('Chamber is in the bottom')
-    motor_next_action = 'open'
-elif chamber_position == 'top':
-    print('Chamber is in the top')
-    motor_next_action = None
-    motor_current_state = 'stop'
-else:
-    print('Chamber not pressing limit switch')
-    motor_next_action = 'open'
-motor.Rotate(motor_next_action)
-print('before\t',motor_next_action)
-print('current\t',motor_current_state)
-# while motor_next_action == 'open':
-while motor_current_state != 'stop':
-    time.sleep(0.5)
-    print('Waiting the top limit switch',motor_current_state)
-
-print('\n\n######## Motor stopped ########\n\n')
-# print('Motor stopped at top\t', motor_current_state)
-# time.sleep(3)
-# print('Entrando no loop')
-time.sleep(3)
-
-last_action = None
-
-# os.mkdir('/sd/data', exist_ok=True)
-print(os.listdir('/sd'))
-if 'data' in os.listdir('/sd/'):
-    print('existe')
-else:
-    os.mkdir('/sd/data')
-    print('/sd/data created')
-    
-    
-print(f'Entering in the loop at {clock_rtc.datetime().hour}')
+time.sleep(1)
+display.fill(0)
+display.text('Sensores OK',0,0)
+display.show()
+counter = 0
+print('Feed wdt')
+wdt.feed()
+time.sleep(0.5)
+display.fill(0)
+display.text(f'waiting {counter}',0,0)
+display.show()
+counter+=1
+print(b1.value(), b2.value(), b3.value())
+# if b1.value() == 1:
+#     motor.Rotate('open')
+# elif (b1.value() == 0) and (b2.value() == 0) and (b3.value() == 0):
+#     motor.Rotate('stop')   
+# elif b2.value() == 1:
+#     motor.Rotate('close')
+# elif b3.value() == 1:
+## Opening chamber
+counter = 0
+while counter <= 20:
+    print('Feed wdt')
+    wdt.feed()
+    time.sleep(1)
+    counter += 1
+    motor.Rotate('open')
+    print('opening...')
+print('Finish initial opening') 
+print('Feed wdt')
+wdt.feed()
+print('Starting main loop')
 while True:
-    if top_ls_pressed and (last_action != 'waiting'):
-        motor_current_state = 'stop'
-        motor.Rotate(motor_current_state)
-        motor_next_action = 'close'
-        
-        print('#'*20)
-        print('Top limit switch pressed')    
-        print('#'*20)
-        print('Starting waiting period')
-        
-        waiting_time = 0
-        while waiting_time < config['timeLimits']['maxTime_chamber_OPEN']:
-            print('Waiting time:\t', waiting_time)
+    print('Feed wdt')
+    wdt.feed()
+
+    print('Turning on the relay for the K30 sensor')
+    for i in range(5):
+        wdt.feed()
+
+        relay01.value(1)
+
+    n = 0
+    while n < 4:
+        n += 1
+
+        motor.Rotate('close')
+        print('closing...')
+        # relay01.value(1)
+        relay02.value(1)
+        wait_time_inter = 0
+        while wait_time_inter < 20:
             time.sleep(1)
-            waiting_time += 1
-        
-        print('#'*20)
-        print('Finished waiting period')
-        print('#'*20)
-        motor.Rotate(motor_next_action)
-        top_ls_pressed = False
-        last_action = 'waiting'
-        
-    elif bot_ls_pressed and (last_action != 'measuring'):
-        motor_current_state = 'stop'
-        motor.Rotate(motor_current_state)
-        motor_next_action = 'open'
+            wait_time_inter += 1
+            print(f'waiting...{wait_time_inter}')
+            print('Feed wdt')
+            wdt.feed()
+
+        # time.sleep(20)
+        print('closed')
+        motor.Rotate('stop')
+        # while True:
+        counter = 0
+        print('Start measuring')
         
         measuring_time = 0
-        print('#########################')
-        print('Bot limit switch pressed')
-        print('#########################')
-        print('Starting measuring')
-        
         start_measure = clock_rtc.datetime()
         start_measure_time = f'{start_measure.year}-{start_measure.month:02}-{start_measure.day:02}_{start_measure.hour:02}-{start_measure.minute:02}-{start_measure.second:02}'
         filename = f'{start_measure_time}.json'
@@ -172,7 +259,12 @@ while True:
         k30_co2 = []
         datetime = []
         datetime_utc = []
+        print('Feed wdt')
+        wdt.feed()
         while measuring_time < config['timeLimits']['maxTime_chamber_CLOSE']:
+            print('Feed wdt')
+            wdt.feed()
+            
             print(measuring_time)
             # time.sleep(0.25)
             clock_now_tuple = clock_rtc.datetime()
@@ -185,6 +277,14 @@ while True:
             si_humidity_value = temp_hum_sensor.humidity()
             
             co2_value = co2_sensor.read_value()
+            
+            display.fill(0)
+            display.text(f'{clock_now_tuple.year}-{clock_now_tuple.month:02}-{clock_now_tuple.day:02}',0, 40)
+            display.text(f'{clock_now_tuple.hour:02}:{clock_now_tuple.minute:02}:{clock_now_tuple.second:02}',0, 50)
+            display.text(f"Time{n}:{measuring_time}",0,0)
+            display.text(f'CO2: {co2_value}',0, 25)
+            display.show()
+            
             
             bmp_pressure.append(bmp_pressure_value)
             bmp_temperature.append(bmp_temperature_value)
@@ -209,51 +309,86 @@ while True:
         end_measure = clock_rtc.datetime()
         end_measure_time = f'{end_measure.year}-{end_measure.month:02}-{end_measure.day:02}_{end_measure.hour:02}-{end_measure.minute:02}-{end_measure.second:02}'
         
-        # print(datetime)
-        # print(datetime_utc)
-        # print(k30_co2)
-        
         raw_data = {'bmp_pressure': bmp_pressure, 'bmp_temperature': bmp_temperature,
                     'si_temperature': si_temperature, 'si_humidity': si_humidity,
                     'k30_co2': k30_co2, 'datetime': datetime, 'datetime_utc': datetime_utc}
         
-        metadata = {'id_sensor': config['id_sensor'], 'start_time': start_measure_time, 'end_time': end_measure_time}
+        # metadata = {'id_sensor': config['id_sensor'], 'start_time': start_measure_time, 'end_time': end_measure_time}
+        print('Feed wdt')
+        wdt.feed()
+        to_json = {
+            # 'metadata': metadata, 
+                'raw_data': raw_data}
         
-        to_json = {'metadata': metadata, 'raw_data': raw_data}
+        folder_path = f'/sd/data/{start_measure.year}-{start_measure.month:02}-{start_measure.day:02}'
+        # if not os.path.exists(folder_path):
+        #     os.mkdir(folder_path)
+        # else:
+        #     pass
         
-        with open(f'/sd/data/{filename}', 'w') as f:
-            json.dump(to_json, f)
-        print(f'{filename} created')
+        # if os.path.exists()
+        try:
+            with open(f'{folder_path}/{filename}', 'w') as f:
+                json.dump(to_json, f)
+            print(f'{filename} created')
+        except Exception as e:
+            print('Error',e)
+            os.mkdir(folder_path)
+            print('Folder created!\t', folder_path)
+            # print(os.listdir('/sd/data'))
+            # print(os.listdir(folder_path))
+
+            with open(f'{folder_path}/{filename}', 'w') as f:
+                json.dump(to_json, f)
+            print(f'{filename} created')
+
+        # last_measure = end_measure
         
         print('#########################')
         print('FINISHED MEASURING')
         print('#########################')
-        motor.Rotate(motor_next_action)
-        bot_ls_pressed = False
-        last_action = 'measuring'
-    
-    elif bot_ls_pressed and (last_action == 'measuring'):
-        time.sleep(1)
-        motor_current_state = 'stop'
-        motor.Rotate(motor_current_state)
-        motor_next_action = 'open'
-        print('Bottom Double pressed detected!!')
-        print('Starting opening chamber')
-        time.sleep(1)
-        motor.Rotate(motor_next_action)
-        bot_ls_pressed = False 
-    elif top_ls_pressed and (last_action == 'waiting'):
-        time.sleep(1)
-        motor_current_state = 'stop'
-        motor.Rotate(motor_current_state)
-        motor_next_action = 'close'
-        print('Top Double pressed detected!!')
-        print('Starting closing chamber')
-        time.sleep(1)
-        motor.Rotate(motor_next_action)
-        top_ls_pressed = False
-    else:
-        print('Waiting for the limit switch:\t', bot_ls_pressed, top_ls_pressed)
-        print('Last action:\t', last_action)
+        print('Feed wdt')
+        wdt.feed()
+        print('opening...')
+        motor.Rotate('open')
+        # relay01.value(0)
+        
+        wait_time_inter = 0
+        while wait_time_inter < 20:
+            print('Feed wdt')
+            wdt.feed()
+            time.sleep(1)
+            wait_time_inter += 1
+            print(f'waiting...{wait_time_inter}')
+            display.fill(0)
+            display.text(f'Opening {wait_time_inter}',0,0)
+            display.show()
+            
+        motor.Rotate('stop')
+        print('waiting...')
+        # time.sleep(20)
+        
+        wait_time_inter = 0
+        relay02.value(0)
+        while wait_time_inter < 120:
+            print('Feed wdt')
+            wdt.feed()
+            time.sleep(1)
+            wait_time_inter += 1
+            print(f'waiting...{wait_time_inter}')
+            display.fill(0)
+            display.text(f'Wait inter {wait_time_inter}',0,0)
+            display.show()
+            
 
-    time.sleep(1)
+    relay01.value(0) #Turns off relay that controls the K30 sensor
+    wait_time = 0
+    while wait_time < config['timeLimits']['maxTime_chamber_OPEN']:
+        print('Feed wdt')
+        wdt.feed()
+        time.sleep(1)
+        wait_time += 1
+        print(f'Full waiting...{wait_time}')
+        display.fill(0)
+        display.text(f'Full waiting {wait_time}',0,0)
+        display.show()

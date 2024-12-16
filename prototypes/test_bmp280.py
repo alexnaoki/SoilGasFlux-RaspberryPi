@@ -4,11 +4,12 @@ from components.bmp280 import *
 import time
 # import components.bmp280
 
-bus = I2C(0,scl=Pin(1),sda=Pin(0),freq=200000)
+bus = I2C(0,scl=Pin(1),sda=Pin(0), timeout=10000)
 print(bus.scan())
 bmp = BMP280(bus)
 
 bmp.use_case(BMP280_CASE_INDOOR)
+# bmp.use_case(BMP280_CASE_WEATHER)
 
 while True:
     pressure=bmp.pressure
