@@ -8,6 +8,7 @@ from prototypes import logging_error
 import components.rtc as rtc
 import components.ssd1306 as ssd1306
 from machine import I2C, Pin, SoftI2C, WDT
+import gc
 
 i2c = SoftI2C(sda=Pin(4), scl=Pin(5), freq=400000)
 display = ssd1306.SSD1306_I2C(128, 64, i2c)
@@ -23,6 +24,9 @@ display.show()
 
 wdt = WDT(timeout=8000)
 wdt.feed()
+
+print('gc collect')
+gc.collect()
 
 ### Configurations files ###
 os.chdir('/')
@@ -244,6 +248,11 @@ while True:
         # time.sleep(20)
         print('closed')
         motor.Rotate('stop')
+
+        print('collect gc')
+        gc.collect()
+        print('gc done')
+
         # while True:
         counter = 0
         print('Start measuring')
@@ -352,7 +361,10 @@ while True:
         print('opening...')
         motor.Rotate('open')
         # relay01.value(0)
-        
+
+        print('running gc')
+        gc.collect()
+        print('gc done')
         wait_time_inter = 0
         while wait_time_inter < 20:
             print('Feed wdt')
