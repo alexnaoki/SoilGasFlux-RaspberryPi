@@ -276,16 +276,28 @@ while True:
             
             print(measuring_time)
             # time.sleep(0.25)
-            clock_now_tuple = clock_rtc.datetime()
-            clock_rtc_value = rtc.tuple2seconds(clock_now_tuple)
+            try:
+                clock_now_tuple = clock_rtc.datetime()
+                clock_rtc_value = rtc.tuple2seconds(clock_now_tuple)
+            except Exception as e:
+                logging_error.log_exception_to_file(e, 'error.log')
             
-            bmp_pressure_value = pressure_sensor.pressure
-            bmp_temperature_value = pressure_sensor.temperature
+            try:
+                bmp_pressure_value = pressure_sensor.pressure
+                bmp_temperature_value = pressure_sensor.temperature
+            except Exception as e:
+                logging_error.log_exception_to_file(e, 'error.log')
+
+            try:
+                si_temperature_value = temp_hum_sensor.temperature()
+                si_humidity_value = temp_hum_sensor.humidity()
+            except Exception as e:
+                logging_error.log_exception_to_file(e, 'error.log')
             
-            si_temperature_value = temp_hum_sensor.temperature()
-            si_humidity_value = temp_hum_sensor.humidity()
-            
-            co2_value = co2_sensor.read_value()
+            try:
+                co2_value = co2_sensor.read_value()
+            except Exception as e:
+                logging_error.log_exception_to_file(e, 'error.log')
             
             display.fill(0)
             display.text(f'{clock_now_tuple.year}-{clock_now_tuple.month:02}-{clock_now_tuple.day:02}',0, 40)

@@ -22,10 +22,10 @@ def create_config_file():
     ##### USER INPUTS #######
     limits = {'maxTime_motor_ON': 1*60, 
               'maxTime_chamber_CLOSE': 2*60, 
-              'maxTime_chamber_OPEN': 3*60}
+              'maxTime_chamber_OPEN': 5*60}
     
-    start_time = {'year': 2024, 'month':12, 'day':9, 'weekday':4, 
-                  'hour':15, 'minute':58, 'second':0, 'millisecond':None, 'sync':False}
+    start_time = {'year': 2025, 'month':3, 'day':14, 'weekday':4, 
+                  'hour':16, 'minute':35, 'second':0, 'millisecond':None, 'sync':False}
     
     id_sensor = 'sensor01'
     ####################
