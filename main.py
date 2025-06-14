@@ -76,6 +76,9 @@ display.show()
 clock_rtc = sd_rtc_component.set_rtc()        #clock object
 wdt.feed()
 
+# Set the RTC clock for logging
+logging_error.set_rtc_clock(clock_rtc)
+
 time.sleep(1)
 display.fill(0)
 display.text(f'ok set rtc',0,0)
@@ -259,8 +262,14 @@ while True:
         
         measuring_time = 0
         start_measure = clock_rtc.datetime()
-        start_measure_time = f'{start_measure.year}-{start_measure.month:02}-{start_measure.day:02}_{start_measure.hour:02}-{start_measure.minute:02}-{start_measure.second:02}'
-        filename = f'{start_measure_time}.json'
+        if start_measure is not None:
+            start_measure_time = f'{start_measure.year}-{start_measure.month:02}-{start_measure.day:02}_{start_measure.hour:02}-{start_measure.minute:02}-{start_measure.second:02}'
+            filename = f'{start_measure_time}.json'
+            folder_path = f'/sd/data/{start_measure.year}-{start_measure.month:02}-{start_measure.day:02}'
+        else:
+            start_measure_time = f'RTC_ERROR_{measuring_time}'
+            filename = f'{start_measure_time}.json'
+            folder_path = f'/sd/data/ERROR'
         bmp_pressure = []
         bmp_temperature = []
         si_temperature = []
@@ -275,38 +284,55 @@ while True:
             wdt.feed()
             
             print(measuring_time)
+            # Initialize variables with default values
+            clock_now_tuple = None
+            clock_rtc_value = 0
+            bmp_pressure_value = None
+            bmp_temperature_value = None
+            si_temperature_value = None
+            si_humidity_value = None
+            co2_value = None
+            
             # time.sleep(0.25)
             try:
                 clock_now_tuple = clock_rtc.datetime()
                 clock_rtc_value = rtc.tuple2seconds(clock_now_tuple)
             except Exception as e:
-                logging_error.log_exception_to_file(e, 'error.log')
+                logging_error.log_exception_to_file(f"RTC read error: {e}", '/sd/error.log')
             
             try:
                 bmp_pressure_value = pressure_sensor.pressure
                 bmp_temperature_value = pressure_sensor.temperature
             except Exception as e:
-                logging_error.log_exception_to_file(e, 'error.log')
+                logging_error.log_exception_to_file(f"BMP280 sensor error: {e}", '/sd/error.log')
 
             try:
                 si_temperature_value = temp_hum_sensor.temperature()
                 si_humidity_value = temp_hum_sensor.humidity()
             except Exception as e:
-                logging_error.log_exception_to_file(e, 'error.log')
+                logging_error.log_exception_to_file(f"Si7021 sensor error: {e}", '/sd/error.log')
             
             try:
                 co2_value = co2_sensor.read_value()
             except Exception as e:
-                logging_error.log_exception_to_file(e, 'error.log')
+                logging_error.log_exception_to_file(f"K30 CO2 sensor error: {e}", '/sd/error.log')
             
-            display.fill(0)
-            display.text(f'{clock_now_tuple.year}-{clock_now_tuple.month:02}-{clock_now_tuple.day:02}',0, 40)
-            display.text(f'{clock_now_tuple.hour:02}:{clock_now_tuple.minute:02}:{clock_now_tuple.second:02}',0, 50)
-            display.text(f"Time{n}:{measuring_time}",0,0)
-            display.text(f'CO2: {co2_value}',0, 25)
-            display.show()
+            # Only update display if we have valid RTC data
+            if clock_now_tuple is not None:
+                display.fill(0)
+                display.text(f'{clock_now_tuple.year}-{clock_now_tuple.month:02}-{clock_now_tuple.day:02}',0, 40)
+                display.text(f'{clock_now_tuple.hour:02}:{clock_now_tuple.minute:02}:{clock_now_tuple.second:02}',0, 50)
+                display.text(f"Time{n}:{measuring_time}",0,0)
+                display.text(f'CO2: {co2_value}',0, 25)
+                display.show()
+            else:
+                display.fill(0)
+                display.text(f"Time{n}:{measuring_time}",0,0)
+                display.text(f'CO2: {co2_value}',0, 25)
+                display.text("RTC Error", 0, 40)
+                display.show()
             
-            
+            # Append sensor values (None if failed)
             bmp_pressure.append(bmp_pressure_value)
             bmp_temperature.append(bmp_temperature_value)
             si_humidity.append(si_humidity_value)
@@ -314,10 +340,14 @@ while True:
             k30_co2.append(co2_value)
             
             datetime.append(clock_rtc_value)
-            datetime_utc.append(f'{clock_now_tuple.year}-{clock_now_tuple.month:02}-{clock_now_tuple.day:02} {clock_now_tuple.hour:02}:{clock_now_tuple.minute:02}:{clock_now_tuple.second:02}')
+            if clock_now_tuple is not None:
+                datetime_utc.append(f'{clock_now_tuple.year}-{clock_now_tuple.month:02}-{clock_now_tuple.day:02} {clock_now_tuple.hour:02}:{clock_now_tuple.minute:02}:{clock_now_tuple.second:02}')
+                print(clock_now_tuple)
+                print(rtc.tuple2seconds(clock_now_tuple))
+            else:
+                datetime_utc.append(f'RTC_ERROR_{measuring_time}')
+                print("RTC read failed")
             
-            print(clock_now_tuple)
-            print(rtc.tuple2seconds(clock_now_tuple))
             print('bmp280\t',bmp_pressure_value, bmp_temperature_value)
             # time.sleep(0.25)
             print('si7021\t', si_temperature_value, si_humidity_value)
@@ -328,7 +358,10 @@ while True:
             measuring_time += 1
             # bmp_pressure.append(pressure_sensor.pressure)
         end_measure = clock_rtc.datetime()
-        end_measure_time = f'{end_measure.year}-{end_measure.month:02}-{end_measure.day:02}_{end_measure.hour:02}-{end_measure.minute:02}-{end_measure.second:02}'
+        if end_measure is not None:
+            end_measure_time = f'{end_measure.year}-{end_measure.month:02}-{end_measure.day:02}_{end_measure.hour:02}-{end_measure.minute:02}-{end_measure.second:02}'
+        else:
+            end_measure_time = f'RTC_ERROR_{measuring_time}'
         
         raw_data = {'bmp_pressure': bmp_pressure, 'bmp_temperature': bmp_temperature,
                     'si_temperature': si_temperature, 'si_humidity': si_humidity,
@@ -341,7 +374,7 @@ while True:
             # 'metadata': metadata, 
                 'raw_data': raw_data}
         
-        folder_path = f'/sd/data/{start_measure.year}-{start_measure.month:02}-{start_measure.day:02}'
+        # Use folder_path from earlier (already handles None case)
         # if not os.path.exists(folder_path):
         #     os.mkdir(folder_path)
         # else:
@@ -354,14 +387,14 @@ while True:
             print(f'{filename} created')
         except Exception as e:
             print('Error',e)
-            os.mkdir(folder_path)
-            print('Folder created!\t', folder_path)
-            # print(os.listdir('/sd/data'))
-            # print(os.listdir(folder_path))
-
-            with open(f'{folder_path}/{filename}', 'w') as f:
-                json.dump(to_json, f)
-            print(f'{filename} created')
+            try:
+                os.mkdir(folder_path)
+                print('Folder created!\t', folder_path)
+                with open(f'{folder_path}/{filename}', 'w') as f:
+                    json.dump(to_json, f)
+                print(f'{filename} created')
+            except Exception as e2:
+                logging_error.log_exception_to_file(f"Failed to create file {filename}: {e2}", '/sd/error.log')
 
         # last_measure = end_measure
         
