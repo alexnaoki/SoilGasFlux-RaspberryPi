@@ -10,6 +10,30 @@ import components.ssd1306 as ssd1306
 from machine import I2C, Pin, SoftI2C, WDT
 import gc
 
+def check_memory():
+    """Check available memory and log if low"""
+    free_mem = gc.mem_free()
+    alloc_mem = gc.mem_alloc()
+    total_mem = free_mem + alloc_mem
+    
+    print(f"Memory - Free: {free_mem}, Allocated: {alloc_mem}, Total: {total_mem}")
+    
+    # Log warning if memory is low (less than 10KB free)
+    if free_mem < 10240:
+        logging_error.log_exception_to_file(f"Low memory warning: {free_mem} bytes free", '/sd/error.log')
+        return False
+    return True
+
+def force_gc_collection():
+    """Force garbage collection and return freed memory"""
+    before = gc.mem_free()
+    gc.collect()
+    after = gc.mem_free()
+    freed = after - before
+    if freed > 0:
+        print(f"GC freed {freed} bytes")
+    return freed
+
 i2c = SoftI2C(sda=Pin(4), scl=Pin(5), freq=400000)
 display = ssd1306.SSD1306_I2C(128, 64, i2c)
 display.fill(0)
@@ -260,6 +284,11 @@ while True:
         counter = 0
         print('Start measuring')
         
+        # Check memory before starting measurement
+        if not check_memory():
+            print("Low memory warning before measurement!")
+            force_gc_collection()
+        
         measuring_time = 0
         start_measure = clock_rtc.datetime()
         if start_measure is not None:
@@ -277,11 +306,25 @@ while True:
         k30_co2 = []
         datetime = []
         datetime_utc = []
+        
+        # Limit maximum samples to prevent memory overflow
+        max_samples = min(config['timeLimits']['maxTime_chamber_CLOSE'], 1000)  # Cap at 1000 samples
+        sample_count = 0
         print('Feed wdt')
         wdt.feed()
-        while measuring_time < config['timeLimits']['maxTime_chamber_CLOSE']:
+        while measuring_time < config['timeLimits']['maxTime_chamber_CLOSE'] and sample_count < max_samples:
             print('Feed wdt')
             wdt.feed()
+            
+            # Check memory every 10 samples
+            if sample_count % 10 == 0:
+                if not check_memory():
+                    print(f"Low memory at sample {sample_count}, forcing GC")
+                    force_gc_collection()
+                    # If still low memory, break early
+                    if gc.mem_free() < 5120:  # Less than 5KB
+                        print("Critical memory - stopping measurement early")
+                        break
             
             print(measuring_time)
             # Initialize variables with default values
@@ -356,6 +399,7 @@ while True:
             # time.sleep(0.5)
             time.sleep(1)
             measuring_time += 1
+            sample_count += 1
             # bmp_pressure.append(pressure_sensor.pressure)
         end_measure = clock_rtc.datetime()
         if end_measure is not None:
@@ -373,6 +417,9 @@ while True:
         to_json = {
             # 'metadata': metadata, 
                 'raw_data': raw_data}
+        
+        # Feed watchdog before file operations
+        wdt.feed()
         
         # Use folder_path from earlier (already handles None case)
         # if not os.path.exists(folder_path):
@@ -395,6 +442,12 @@ while True:
                 print(f'{filename} created')
             except Exception as e2:
                 logging_error.log_exception_to_file(f"Failed to create file {filename}: {e2}", '/sd/error.log')
+
+        # Clear data from memory after successful write
+        del raw_data, to_json
+        del bmp_pressure, bmp_temperature, si_temperature, si_humidity
+        del k30_co2, datetime, datetime_utc
+        force_gc_collection()
 
         # last_measure = end_measure
         
