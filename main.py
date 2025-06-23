@@ -7,6 +7,7 @@ from aux.chamber_position import ChamberPosition
 from prototypes import logging_error
 import components.rtc as rtc
 import components.ssd1306 as ssd1306
+from aux.client import TransmitData
 from machine import I2C, Pin, SoftI2C, WDT
 import gc
 
@@ -34,6 +35,9 @@ def force_gc_collection():
         print(f"GC freed {freed} bytes")
     return freed
 
+
+
+
 i2c = SoftI2C(sda=Pin(4), scl=Pin(5), freq=400000)
 display = ssd1306.SSD1306_I2C(128, 64, i2c)
 display.fill(0)
@@ -48,6 +52,8 @@ display.show()
 
 wdt = WDT(timeout=8000)
 wdt.feed()
+
+
 
 print('gc collect')
 gc.collect()
@@ -67,6 +73,10 @@ except:
 ###########################
 print('Feed wdt')
 wdt.feed()
+
+transmit = TransmitData(ssid="name12", password="password", server_ip="192.168.4.1", server_port=80, wdt_obj=wdt)
+transmit.send_simple_data(id=config['id_sensor'], datatype='Starting', data=None)
+
 ### Assigning Buttons and limit switch###
 b1 = machine.Pin(config['buttons']['button01'], machine.Pin.IN, machine.Pin.PULL_DOWN)
 b2 = machine.Pin(config['buttons']['button02'], machine.Pin.IN, machine.Pin.PULL_DOWN)
@@ -257,7 +267,7 @@ while True:
         relay01.value(1)
 
     n = 0
-    while n < 4:
+    while n < config['timeLimits']['measurement_repeat']:
         n += 1
 
         motor.Rotate('close')
@@ -432,6 +442,10 @@ while True:
             with open(f'{folder_path}/{filename}', 'w') as f:
                 json.dump(to_json, f)
             print(f'{filename} created')
+            wdt.feed()
+            transmit.send_simple_data(id=config['id_sensor'], datatype='Measurement',
+                                      data=f'CO2={k30_co2[0]}-{k30_co2[-1]}')
+            # transmit.send_simple_data(id=config['id_sensor'], datatype='Starting', data=None)
         except Exception as e:
             print('Error',e)
             try:
@@ -440,7 +454,12 @@ while True:
                 with open(f'{folder_path}/{filename}', 'w') as f:
                     json.dump(to_json, f)
                 print(f'{filename} created')
+                wdt.feed()
+                transmit.send_simple_data(id=config['id_sensor'], datatype='Measurement', 
+                                      data=f'co2 data')            
+
             except Exception as e2:
+                print('Error creating file', e2)
                 logging_error.log_exception_to_file(f"Failed to create file {filename}: {e2}", '/sd/error.log')
 
         # Clear data from memory after successful write

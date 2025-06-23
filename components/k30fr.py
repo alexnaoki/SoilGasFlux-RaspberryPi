@@ -12,7 +12,8 @@ class K30:
         # bytearray
         #TODO use to read to buffer instead of readfrom
         response = bytearray(4)
-        response_1 = self.i2c.readfrom_into(self.addr, response)
+        # response_1 = self.i2c.readfrom_into(self.addr, response)
+        self.i2c.readfrom_into(self.addr, response)
         sleep_ms(20)
         checksum = sum(response[:3])
         if checksum != response[3]:
