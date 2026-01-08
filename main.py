@@ -37,9 +37,12 @@ def force_gc_collection():
 
 
 
+wdt = WDT(timeout=8000)
+wdt.feed()
 
 i2c = SoftI2C(sda=Pin(4), scl=Pin(5), freq=400000)
 display = ssd1306.SSD1306_I2C(128, 64, i2c)
+
 display.fill(0)
 display.text("Hello Yellow!",0,0)
 display.text("Hello Blue!",0,17)
@@ -47,12 +50,7 @@ display.text("Hello Blue!",0,27)
 display.text("Hello Blue!",0,37)
 display.text("Hello Blue!",0,47)
 display.text("Hello Blue!",0,57)
-
 display.show()
-
-wdt = WDT(timeout=8000)
-wdt.feed()
-
 
 
 print('gc collect')
@@ -123,10 +121,7 @@ wdt.feed()
 # print(i2c_test.scan())
 
 time.sleep(1)
-# display.fill(0)
-# # display.text(f'date {clock_rtc.datetime}',0,0)
-# display.text(f'date {clock_rtc.year}',0,0)
-# display.show()
+
 try:
     # i2c_test = I2C(1, sda=Pin(26), scl=Pin(27))
     
