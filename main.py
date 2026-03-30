@@ -519,6 +519,7 @@ while True:
                     print('Critical memory — stopping early')
                     break
 
+
             # Read sensors with individual error handling
             clock_now = None
             try:
