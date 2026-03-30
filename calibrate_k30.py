@@ -1,4 +1,4 @@
-import machine, os, time, json
+import machine, os, time, json, gc
 from init_sensors import Init_Sensors
 from init_motor import Init_Motor
 from init_sd_rtc import Init_SD_RTC
@@ -6,6 +6,32 @@ from aux.create_config import create_config_file
 from aux.chamber_position import ChamberPosition
 from prototypes import logging_error
 import components.rtc as rtc
+
+
+def _write_array(f, arr, chunk=50):
+    """Write a list to an open file in chunks to avoid large allocations."""
+    f.write('[')
+    for i in range(0, len(arr), chunk):
+        seg = json.dumps(arr[i:i + chunk])
+        if i > 0:
+            f.write(',')
+        f.write(seg[1:-1])
+    f.write(']')
+
+
+def save_measurement(filepath, data_dict):
+    """Write {"raw_data": {key: [...], ...}} incrementally to avoid OOM."""
+    with open(filepath, 'w') as f:
+        f.write('{"raw_data":{')
+        first = True
+        for key, arr in data_dict.items():
+            if not first:
+                f.write(',')
+            f.write(json.dumps(key))
+            f.write(':')
+            _write_array(f, arr)
+            first = False
+        f.write('}}')
 
 measure = 60
 
@@ -114,15 +140,13 @@ while True:
                     'si_temperature': si_temperature, 'si_humidity': si_humidity,
                     'k30_co2': k30_co2, 'datetime': datetime, 'datetime_utc': datetime_utc}
         
-        # metadata = {'id_sensor': config['id_sensor'], 'start_time': start_measure_time, 'end_time': end_measure_time}
-        
-        to_json = {
-            # 'metadata': metadata, 
-                   'raw_data': raw_data}
-        
-        with open(f'/sd/data/{filename}', 'w') as f:
-            json.dump(to_json, f)
+        save_measurement(f'/sd/data/{filename}', raw_data)
         print(f'{filename} created')
+        
+        del raw_data
+        del bmp_pressure, bmp_temperature, si_temperature, si_humidity
+        del k30_co2, datetime, datetime_utc
+        gc.collect()
         
         print('#########################')
         print('FINISHED MEASURING')

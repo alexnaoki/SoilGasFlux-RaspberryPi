@@ -123,15 +123,21 @@ class BMP280:
             self.use_case(use_case)
 
     def _read(self, addr, size=1):
-        return self._bmp_i2c.readfrom_mem(self._i2c_addr, addr, size)
+        try:
+            return self._bmp_i2c.readfrom_mem(self._i2c_addr, addr, size)
+        except OSError as e:
+            print(f'BMP280 I2C read error: {e}')
+            return bytes(size)  # return zeroes on failure
 
     def _write(self, addr, b_arr):
         if not type(b_arr) is bytearray:
             b_arr = bytearray([b_arr])
-        return self._bmp_i2c.writeto_mem(self._i2c_addr, addr, b_arr)
+        try:
+            return self._bmp_i2c.writeto_mem(self._i2c_addr, addr, b_arr)
+        except OSError as e:
+            print(f'BMP280 I2C write error: {e}')
 
     def _gauge(self):
-        # TODO limit new reads
         # read all data at once (as by spec)
         d = self._read(_BMP280_REGISTER_DATA, 6)
 
@@ -193,6 +199,8 @@ class BMP280:
         self._calc_t_fine()
         if self._t == 0:
             self._t = ((self._t_fine * 5 + 128) >> 8) / 100.
+        if not -40 <= self._t <= 85:
+            return None
         return self._t
 
     @property
@@ -217,6 +225,8 @@ class BMP280:
 
             p = ((p + var1 + var2) >> 8) + (self._P7 << 4)
             self._p = p / 256.0
+        if self._p != 0 and not 30000 <= self._p <= 110000:
+            return None
         return self._p
 
     def _write_bits(self, address, value, length, shift=0):

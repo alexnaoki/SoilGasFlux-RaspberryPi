@@ -1,9 +1,27 @@
 import json
 import os
+import time
+import machine
 from prototypes import logging_error
 
+def _get_system_time(utc_now):
+    """Set the Pico's internal RTC to the given UTC time and return a start_time dict.
+
+    Args:
+        utc_now: tuple (year, month, day, hour, minute, second) in UTC.
+    """
+    machine.RTC().datetime((utc_now[0], utc_now[1], utc_now[2], 0,
+                            utc_now[3], utc_now[4], utc_now[5], 0))
+    t = time.gmtime()
+    print('UTC time:', t)
+    return {
+        'year': t[0], 'month': t[1], 'day': t[2],
+        'weekday': t[6], 'hour': t[3], 'minute': t[4],
+        'second': t[5], 'millisecond': None, 'sync': True
+    }
+
 @logging_error.log_errors_to_file('error.log')
-def create_config_file():
+def create_config_file(utc_now):
     ##### GPIOs ########
     buttons = {'button01': 6, 'button02': 7, 'button03':8}
     
@@ -27,10 +45,10 @@ def create_config_file():
               'measurement_wait_inbetween': 120,
               }
     
-    start_time = {'year': 2026, 'month':1, 'day':6, 'weekday':4, 
-                  'hour':11, 'minute':4, 'second':0, 'millisecond':None, 'sync':False}
+    # Set Pico RTC to the provided UTC time
+    start_time = _get_system_time(utc_now)
     
-    id_sensor = 'sensor02'
+    id_sensor = 'sensor03'
     ####################
     
     
@@ -51,4 +69,5 @@ def create_config_file():
 #     os.
 
 if __name__ == '__main__':
-    create_config_file()
+    # Pass current UTC time: (year, month, day, hour, minute, second)
+    create_config_file(utc_now=(2026, 3, 25, 19, 29, 0))

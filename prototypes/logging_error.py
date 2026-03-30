@@ -30,27 +30,29 @@ def log_errors_to_file(file_path):
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                with open(file_path, "a") as file:
-                    log_datetime = get_rtc_datetime()
-                    file.write(f"[{log_datetime}]\tError in function {func.__name__}: {str(e)}\n")
-                    print(f"Error logged: {func.__name__}: {str(e)}")
+                try:
+                    with open(file_path, "a") as file:
+                        log_datetime = get_rtc_datetime()
+                        file.write(f"[{log_datetime}]\tERROR\t{func.__name__}\t{type(e).__name__}: {e}\n")
+                except Exception:
+                    pass
+                print(f"Error logged: {func.__name__}: {e}")
                 raise
         return wrapper
     return decorator
 
-def log_exception_to_file(error_message, file_path="/sd/error.log"):
+def log_exception_to_file(error_message, file_path="/sd/error.log",
+                         level="ERROR", source=None):
     """
-    Log an error message to a file with RTC timestamp.
-    
-    Args:
-        error_message: The error message to log
-        file_path: Path to the log file (defaults to /sd/error.log)
+    Log an error message to a file with RTC timestamp, severity level,
+    and optional source tag.
     """
     try:
         with open(file_path, "a") as file:
             log_datetime = get_rtc_datetime()
-            file.write(f"[{log_datetime}]\t{error_message}\n")
-            print(f"Error logged: {error_message}")
+            src = f"\t{source}" if source else ""
+            file.write(f"[{log_datetime}]\t{level}{src}\t{error_message}\n")
+            print(f"{level}: {error_message}")
     except Exception as e:
         # If logging itself fails, print to console
         print(f"Failed to log error: {e}")

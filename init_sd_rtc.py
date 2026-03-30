@@ -58,14 +58,14 @@ class Init_SD_RTC:
                 # print(spi)
                 self.sd = sdcard.SDCard(spi=spi, cs=cs)
                 tries = 3
-            except:
-                print('SD Card not initialized')
+            except Exception as e:
+                print(f'SD Card not initialized: {e}')
                 tries += 1
                 time.sleep(1)
 
         try:
             uos.umount("/sd")
-        except:
+        except Exception:
             pass
 
         tries = 0
@@ -75,8 +75,8 @@ class Init_SD_RTC:
                 uos.mount(vfs, "/sd")
                 print('SD Card initialized')
                 tries = 3
-            except:
-                print('SD Card not mounted')
+            except Exception as e:
+                print(f'SD Card not mounted: {e}')
                 tries += 1
                 time.sleep(1)
             # return 0
@@ -126,6 +126,18 @@ class Init_SD_RTC:
         print(time.localtime())
         print(self.clock.datetime())
         print('synced')
+
+        # One-shot: disable sync so battery boots use the DS1307 directly
+        self._disable_sync()
+
+    @logging_error.log_errors_to_file('error.log')
+    def _disable_sync(self):
+        """Set sync=False in config.json so subsequent battery boots skip sync."""
+        self.config['start_time']['sync'] = False
+        os.chdir('/')
+        with open('config.json', 'w') as f:
+            json.dump(self.config, f)
+        print('sync disabled in config.json for next boot')
         
     def set_oled(self):
         gpio_sda = 4
