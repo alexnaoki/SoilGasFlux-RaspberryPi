@@ -1,5 +1,6 @@
 import usocket as socket
 import utime as time
+import ujson as json
 import network
 
 # WiFi settings
@@ -9,105 +10,155 @@ WIFI_PASSWORD = "password"
 # Server settings
 SERVER_IP = "192.168.4.1"
 SERVER_PORT = 80
+TCP_PORT = 8080
 
 class TransmitData:
     """Class to handle data transmission over WiFi"""
     
-    def __init__(self, ssid, password, server_ip, server_port, wdt_obj=None):
+    def __init__(self, ssid, password, server_ip, server_port, tcp_port=8080, wdt_obj=None):
         self.ssid = ssid
         self.password = password
         self.server_ip = server_ip
         self.server_port = server_port
-        self.wdt_obj = wdt_obj  # Watchdog timer object, if needed
+        self.tcp_port = tcp_port
+        self.wdt_obj = wdt_obj
+        self.wlan = None
+        self.wifi_available = False
+        self._stream_socket = None
             
     def connect_to_wifi(self):
-        """Connect to WiFi with 10 second timeout"""
+        """Connect to WiFi with 10 second timeout. Returns True if connected."""
         print("Connecting to WiFi...")
-        wlan = network.WLAN(network.STA_IF)
-        wlan.active(True)
-        print(wlan.isconnected())
+        self.wlan = network.WLAN(network.STA_IF)
+        self.wlan.active(True)
         
-        if not wlan.isconnected():
-            wlan.connect(self.ssid, self.password)
+        if not self.wlan.isconnected():
+            self.wlan.connect(self.ssid, self.password)
             
-            # Try to connect for 10 seconds maximum
             connection_timeout = 10
             start_time = time.time()
             
-            while not wlan.isconnected() and (time.time() - start_time) < connection_timeout:
+            while not self.wlan.isconnected() and (time.time() - start_time) < connection_timeout:
                 print("Waiting for connection...")
                 time.sleep(1)
-                if self.wdt_obj:  # Feed watchdog timer if available
+                if self.wdt_obj:
                     self.wdt_obj.feed()
             
-            if wlan.isconnected():
+            if self.wlan.isconnected():
                 print("WiFi connected!")
+                self.wifi_available = True
             else:
                 print(f"WiFi connection failed after {connection_timeout} seconds - continuing without WiFi")
+                self.wlan.active(False)
+                self.wifi_available = False
         else:
             print("WiFi already connected!")
+            self.wifi_available = True
         
-        return wlan
+        return self.wifi_available
 
     def send_simple_data(self, id, datatype=None, data=None):
-        """Send simple test messages"""
-        wlan = self.connect_to_wifi()
-        
-        # Check if WiFi connection was successful
-        if not wlan.isconnected():
+        """Send a single message over a new TCP connection."""
+        if not self.wifi_available:
             print("No WiFi connection - skipping data transmission")
             return False
         
+        client_socket = None
         try:
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            print(f"Connecting to {self.server_ip}:{self.server_port}...")
-            
             client_socket.connect((self.server_ip, self.server_port))
-            print("Connected!")
             
-            # Send simple messages
-            if datatype is None:
-                for i in range(2):
-                    message = f"Message {i+1} from client: {id}"
-                    client_socket.send(message.encode('utf-8'))
-                    print(f"Sent: {message}")
-                    time.sleep(1)
             if datatype == 'Starting':
-                print('Sending starting message...')
                 message = f"STARTING:{id}"
-                client_socket.send(message.encode('utf-8'))
-                print(f"Sent: {message}")
-                time.sleep(1)
-            if datatype == 'Measurement':
-                print('Sending measurement data...')
+            elif datatype == 'Measurement':
                 message = f"MEASUREMENT:{id}:{data}"
-                client_socket.send(message.encode('utf-8'))
-                print(f"Sent: {message}")
-                time.sleep(1)
+            else:
+                message = f"MSG:{id}"
             
-            print("Finished sending messages")
+            client_socket.send(message.encode('utf-8'))
+            print(f"Sent: {message}")
             return True
             
-        except OSError as e:
-            print(f"Connection error: {e}")
-            return False
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"Send error: {e}")
             return False
         finally:
+            if client_socket is not None:
+                try:
+                    client_socket.close()
+                except:
+                    pass
+
+    def stream_reading(self, id, sample, co2, pressure, temp_bmp, temp_si, humidity, dt_utc_str, timestamp=None):
+        """Stream a single sensor reading as newline-delimited JSON over a persistent TCP connection."""
+        if not self.wifi_available:
+            return False
+
+        reading = {
+            "id": id,
+            "co2": co2,
+            "temperature": temp_bmp,
+            "humidity": humidity,
+            "pressure": pressure,
+            "temp_si": temp_si,
+            "sample": sample,
+            "dt_utc": dt_utc_str,
+            "timestamp": timestamp if timestamp is not None else int(time.time()),
+        }
+
+        # Try sending on existing persistent socket, reconnect once on failure
+        for attempt in range(2):
+            if self._stream_socket is None:
+                if not self._connect_stream():
+                    return False
+
             try:
-                client_socket.close()
-                print("Connection closed")
-            except:
+                line = json.dumps(reading) + "\n"
+                self._stream_socket.send(line.encode("utf-8"))
+                return True
+            except Exception as e:
+                print(f"Stream send error (attempt {attempt + 1}): {e}")
+                self._close_stream()
+
+        return False
+
+    def _connect_stream(self):
+        """Open a persistent TCP socket to the server's sensor-data port."""
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((self.server_ip, self.tcp_port))
+            self._stream_socket = s
+            print(f"Stream connected to {self.server_ip}:{self.tcp_port}")
+            return True
+        except Exception as e:
+            print(f"Stream connect error: {e}")
+            self._stream_socket = None
+            return False
+
+    def _close_stream(self):
+        """Close the persistent stream socket."""
+        if self._stream_socket is not None:
+            try:
+                self._stream_socket.close()
+            except Exception:
                 pass
-            
-            # Turn off WiFi
-            print("Turning off WiFi...")
-            wlan.active(False)
+            self._stream_socket = None
+
+    def disconnect_wifi(self):
+        """Turn off WiFi and close any open stream."""
+        self._close_stream()
+        if self.wlan:
+            self.wlan.active(False)
+            self.wifi_available = False
             print("WiFi turned off")
 
 if __name__ == "__main__":
     print("Starting simple client...")
-    transmit_data = TransmitData(WIFI_SSID, WIFI_PASSWORD, SERVER_IP, SERVER_PORT, wdt_obj=None)
+    transmit_data = TransmitData(WIFI_SSID, WIFI_PASSWORD, SERVER_IP, SERVER_PORT,
+                                 tcp_port=TCP_PORT, wdt_obj=None)
 
-    transmit_data.send_simple_data(id='test01')
+    if transmit_data.connect_to_wifi():
+        transmit_data.send_simple_data(id='test01')
+        transmit_data.disconnect_wifi()
+    else:
+        print("Could not connect to WiFi")

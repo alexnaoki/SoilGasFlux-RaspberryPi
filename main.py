@@ -6,7 +6,7 @@ from aux.create_config import create_config_file
 from prototypes import logging_error
 import components.rtc as rtc
 import components.ssd1306 as ssd1306
-from aux.client import TransmitData
+from aux.ap_server import APServer
 from aux.validate_config import validate_config
 from machine import Pin, SoftI2C, WDT
 import gc
@@ -38,10 +38,16 @@ def display_status(display, title, components):
     display.show()
 
 
+# Global reference set after AP server starts
+_ap_server = None
+
+
 def wait_with_wdt(wdt, seconds, display=None, msg=None):
     """Sleep for *seconds* while feeding the watchdog every second."""
     for s in range(seconds):
         wdt.feed()
+        if _ap_server:
+            _ap_server.poll()
         time.sleep(1)
         if display and msg:
             display_msg(display, f'{msg} {s + 1}/{seconds}')
@@ -283,11 +289,17 @@ wdt.feed()
 
 print(config)
 
-# --- WiFi / transmit ---
-transmit = TransmitData(
-    ssid="name12", password="password",
-    server_ip="192.168.4.1", server_port=80, wdt_obj=wdt)
-transmit.send_simple_data(id=config['id_sensor'], datatype='Starting', data=None)
+# --- WiFi AP + web server ---
+wifi_cfg = config.get('wifi', {})
+ap = APServer(
+    ssid=wifi_cfg.get('ssid', 'CO2Monitor'),
+    password=wifi_cfg.get('password', 'co2monitor123'),
+    port=wifi_cfg.get('server_port', 80),
+    wdt_obj=wdt)
+ap_ip = ap.start_ap()
+ap.start_server()
+_ap_server = ap
+print(f'Connect to WiFi "{ap.ssid}" then open http://{ap_ip}')
 
 # --- GPIO ---
 b1 = Pin(config['buttons']['button01'], Pin.IN, Pin.PULL_DOWN)
@@ -573,10 +585,16 @@ while True:
 
             if clock_now is not None:
                 dt_sec.append(rtc.tuple2seconds(clock_now))
-                dt_utc.append(fmt_dt_utc(clock_now))
+                utc_str = fmt_dt_utc(clock_now)
+                dt_utc.append(utc_str)
             else:
                 dt_sec.append(0)
-                dt_utc.append(f'RTC_ERROR_{sample}')
+                utc_str = f'RTC_ERROR_{sample}'
+                dt_utc.append(utc_str)
+
+            # Push reading to AP web server buffer
+            ap.add_reading(utc_str, co2_val)
+            ap.poll()
 
             time.sleep(1)
 
@@ -605,9 +623,6 @@ while True:
                 save_measurement(f'{folder_path}/{filename}', data_dict, wdt=wdt)
                 print(f'{filename} saved')
                 wdt.feed()
-                transmit.send_simple_data(
-                    id=sensor_id, datatype='Measurement',
-                    data=f'CO2={co2_first}-{co2_last}')
             except Exception as e:
                 print('File save error', e)
                 logging_error.log_exception_to_file(
@@ -627,7 +642,7 @@ while True:
         motor.Rotate('stop')
 
         relay02.value(0)
-        wait_with_wdt(wdt, 120, display, 'Wait inter')
+        wait_with_wdt(wdt, 30, display, 'Wait inter')
 
     # --- Long open period between cycles ---
     relay01.value(0)

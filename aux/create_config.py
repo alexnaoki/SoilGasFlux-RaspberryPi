@@ -39,16 +39,20 @@ def create_config_file(utc_now):
     
     ##### USER INPUTS #######
     limits = {'maxTime_motor_ON': 1*60, 
-              'maxTime_chamber_CLOSE': 120, 
+              'maxTime_chamber_CLOSE': 60, 
               'maxTime_chamber_OPEN': 20*60,
-              'measurement_repeat': 3,
-              'measurement_wait_inbetween': 120,
+              'measurement_repeat': 20,
+              'measurement_wait_inbetween': 30,
               }
     
     # Set Pico RTC to the provided UTC time
     start_time = _get_system_time(utc_now)
     
-    id_sensor = 'sensor03'
+    id_sensor = 'gals-1.2'
+    # WIFI_SSID = "CO2Monitor"
+# WIFI_PASSWORD = "co2monitor123"
+    wifi = {'ssid': 'gals_1-2', 'password': 'co2monitor123',
+            'server_ip': '192.168.4.1', 'server_port': 80, 'tcp_port': 8080}
     ####################
     
     
@@ -56,7 +60,7 @@ def create_config_file(utc_now):
               'limit_swiches': limit_swiches, 'rtc': rtc,
               'sd_card': sd_card, 'i2c_sensor': i2c_sensor,
               'start_time': start_time, 'timeLimits': limits,
-              'id_sensor': id_sensor}
+              'id_sensor': id_sensor, 'wifi': wifi}
     print(os.getcwd())
     os.chdir('/')
     

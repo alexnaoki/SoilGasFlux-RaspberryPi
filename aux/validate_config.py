@@ -46,4 +46,11 @@ def validate_config(config):
     if 'id_sensor' not in config:
         errors.append('Missing key: id_sensor')
 
+    # Validate WiFi section (optional but check structure if present)
+    if 'wifi' in config:
+        wifi = config['wifi']
+        for key in ['ssid', 'password', 'server_ip', 'server_port']:
+            if key not in wifi:
+                errors.append(f'Missing key: wifi.{key}')
+
     return errors
